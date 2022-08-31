@@ -8,7 +8,7 @@ using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
 
 namespace GPM_AGV_LAT_CORE.AGVC
 {
-    public class GangHaoAGV : IAGVC
+    public class GangHaoAGVC : IAGVC
     {
         public string ID { get; set; } = "0001";
         public AGVC_TYPES agvcType { get; set; } = AGVC_TYPES.GangHau;

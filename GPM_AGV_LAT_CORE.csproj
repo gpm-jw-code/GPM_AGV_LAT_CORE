@@ -52,7 +52,7 @@
     <Compile Include="AGVC\AGVCStates\BetteryStates.cs" />
     <Compile Include="AGVC\AGVCStates\MapState.cs" />
     <Compile Include="AGVC\AGVCStates\RUNStates.cs" />
-    <Compile Include="AGVC\GangHaoAGV.cs" />
+    <Compile Include="AGVC\GangHaoAGVC.cs" />
     <Compile Include="AGVC\IAGVC.cs" />
     <Compile Include="AGVS\AGVSManager.cs" />
     <Compile Include="AGVS\API\IAgvsApi.cs" />
@@ -93,15 +93,14 @@
     <Compile Include="Startup.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Core\GangHaoAGV\GangHaoAGV.csproj">
+    <None Include="app.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GangHaoAGV\GangHaoAGV.csproj">
       <Project>{afcaae22-8264-49cd-883c-797e7645b4b4}</Project>
       <Name>GangHaoAGV</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -15,8 +15,8 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// </summary>
         public static List<IAGVC> AGVCList = new List<IAGVC>()
         {
-           new GangHaoAGV() {ID="0001",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.233"} }},
-           new GangHaoAGV() {ID="0002",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.111"} }},
+           new GangHaoAGVC() {ID="0001",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.233"} }},
+           new GangHaoAGVC() {ID="0002",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.111"} }},
         };
 
 
