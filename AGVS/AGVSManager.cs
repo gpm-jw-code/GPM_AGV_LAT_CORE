@@ -8,9 +8,15 @@ using System.Threading.Tasks;
 
 namespace GPM_AGV_LAT_CORE.AGVS
 {
+    /// <summary>
+    /// AGVS管理、中繼者
+    /// </summary>
     public static class AGVSManager
     {
 
+        /// <summary>
+        /// 目前使用的派車平台
+        /// </summary>
         public static IAGVS CurrentAGVS;
 
         /// <summary>
@@ -20,6 +26,7 @@ namespace GPM_AGV_LAT_CORE.AGVS
         {
 
             if (SystemParams.AgvsTypeToUse == AGVS_TYPES.KINGGALLENT)
+            {
                 CurrentAGVS = new KingGallentAGVS()
                 {
                     BindingAGVCInfoList = new List<IAgvcInfoToAgvs>()
@@ -36,9 +43,9 @@ namespace GPM_AGV_LAT_CORE.AGVS
                         }
                     }
                 };
+                CurrentAGVS.OnTaskDownloadRecieved += GPMMiddleware.AgvsHandler.KingGellantTaskDownloadHandle;///註冊派車任務下載事件
+            }
 
-
-            CurrentAGVS.OnTaskDownloadRecieved += GPMMiddleware.AgvsHandler.TaskDownloadHandle;
             await TryConnectToHost();
         }
 

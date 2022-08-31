@@ -17,17 +17,34 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
     /// </summary>
     public static class AgvcHandler
     {
-        internal static void AgvcStateChangedHandle(object sender, EventArgs e)
+        /// <summary>
+        /// Handle GangHao AGVC 狀態改變
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        internal static void GangHaoAgvcStateChangedHandle(object sender, EventArgs e)
         {
             IC2SConverter convert = ConverterSelect((IAGVC)sender);
-            StateReport(convert.StateConvert((IAGVC)sender));
+            AGVSManager.CurrentAGVS.ReportAGVCState(convert.StateConvert((IAGVC)sender));
         }
 
-        private static void StateReport(object v)
+        /// <summary>
+        /// Handle GPM AGVC 狀態改變
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        internal static void GPMAgvcStateChangedHandle(object sender, EventArgs e)
         {
-            AGVSManager.CurrentAGVS.ReportAGVCState(v);
+            IC2SConverter convert = ConverterSelect((IAGVC)sender);
+            AGVSManager.CurrentAGVS.ReportAGVCState(convert.StateConvert((IAGVC)sender));
         }
 
+
+        /// <summary>
+        /// 由AGVC廠牌與AGVS廠牌決定要用哪一個轉換器
+        /// </summary>
+        /// <param name="agvc"></param>
+        /// <returns></returns>
         private static IC2SConverter ConverterSelect(IAGVC agvc)
         {
             IC2SConverter converter = null;

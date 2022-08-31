@@ -49,8 +49,13 @@ namespace GPM_AGV_LAT_CORE.AGVC
             AGVCInfoBinding();
             foreach (IAGVC agvc in AGVCList.FindAll(agvc => agvc.agvcInfos != null))
             {
-                agvc.StateOnChanged += AgvcHandler.AgvcStateChangedHandle;
+                if (agvc.agvcType == AGVC_TYPES.GangHau)
+                    agvc.StateOnChanged += AgvcHandler.GangHaoAgvcStateChangedHandle;
+                else if (agvc.agvcType == AGVC_TYPES.GPM)
+                    agvc.StateOnChanged += AgvcHandler.GPMAgvcStateChangedHandle;
                 agvc.ConnectToAGV();
+                agvc.SyncOrdersState();
+                agvc.SyncSyncOrderExecuteState();
             }
         }
 
@@ -66,6 +71,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
                     bindedAgvcNum++;
                 }
             }
+            Console.WriteLine("綁定了 {0} 台車", bindedAgvcNum);
             return bindedAgvcNum;
         }
     }

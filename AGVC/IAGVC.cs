@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
 using GPM_AGV_LAT_CORE.AGVS;
+using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
 using GPM_AGV_LAT_CORE.LATSystem;
 using GPM_AGV_LAT_CORE.Parameters;
 
@@ -25,10 +26,10 @@ namespace GPM_AGV_LAT_CORE.AGVC
         AGVC_TYPES agvcType { get; set; }
 
         /// <summary>
-        /// 與AGV車連線
+        /// 接受的派車任務清單
         /// </summary>
-        /// <returns>是否連接成功</returns>
-        bool ConnectToAGV();
+        List<clsHostOrder> orderList_LAT { get; set; }
+
         /// <summary>
         /// AGVC 參數
         /// </summary>
@@ -42,11 +43,31 @@ namespace GPM_AGV_LAT_CORE.AGVC
         IAgvcInfoToAgvs agvcInfos { get; set; }
 
         /// <summary>
-        /// 從車子Download抓取目前的狀態
+        /// 與AGV車連線
         /// </summary>
-        void FetchCurrentState();
+        /// <returns>是否連接成功</returns>
+        bool ConnectToAGV();
 
-        void Emulation();
+        /// <summary>
+        /// 同步車子狀態
+        /// </summary>
+        void SyncState();
+        /// <summary>
+        /// 同步訂單列表
+        /// </summary>
+        void SyncOrdersState();
+        /// <summary>
+        /// 同步訂單執行狀況
+        /// </summary>
+        void SyncSyncOrderExecuteState();
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        bool TryExecuteOrder(clsHostOrder order, out string message);
 
         /// <summary>
         /// 車輛狀態或訂單狀態變化

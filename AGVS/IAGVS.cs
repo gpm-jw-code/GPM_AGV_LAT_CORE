@@ -23,6 +23,11 @@ namespace GPM_AGV_LAT_CORE.AGVS
         AGVS_TYPES agvsType { get; set; }
 
         /// <summary>
+        /// 
+        /// </summary>
+        string VenderName { get; set; }
+
+        /// <summary>
         /// 參數
         /// </summary>
         AGVSParameters agvsParameters { get; set; }
@@ -58,10 +63,6 @@ namespace GPM_AGV_LAT_CORE.AGVS
         /// <returns></returns>
         bool ConnectToHost(out string err_msg);
 
-        /// <summary>
-        /// 註冊車子
-        /// </summary>
-        void RegistAGVC();
 
         /// <summary>
         /// 上報AGV車狀態

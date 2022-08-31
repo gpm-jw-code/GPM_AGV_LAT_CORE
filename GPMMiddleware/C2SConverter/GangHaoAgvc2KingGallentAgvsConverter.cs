@@ -14,7 +14,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.C2SConverter
     {
         public object StateConvert(IAGVC agvc)
         {
-            AGVC.GangHaoAGVC _agvc = (AGVC.GangHaoAGVC)agvc;
+            GangHaoAGVC _agvc = (GangHaoAGVC)agvc;
             AgvcInfoForKingAllant info = (AgvcInfoForKingAllant)_agvc.agvcInfos;
             HandshakeRunningStatusReportHelper helper = new HandshakeRunningStatusReportHelper(info.SID, info.EQName);
             var stateReportData = helper.CreateStateReportDataModel(new RunningStateReportModel());

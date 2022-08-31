@@ -78,10 +78,15 @@ namespace GPM_AGV_LAT_CORE.Emulators
         }
         public void TaskDownload(string SID, string EQName)
         {
+            if (clients.Count == 0)
+                return;
+
             string agvKey = SID + EQName;
             clients.TryGetValue(agvKey, out Socket client);
             if (client == null)
-                return;
+            {
+                client = clients.First().Value;
+            }
             HandshakeRunningStatusReportHelper requestHelper = new HandshakeRunningStatusReportHelper(SID, EQName);
             client.Send(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(requestHelper.CreateTaskDownload()) + "*CR"));
         }

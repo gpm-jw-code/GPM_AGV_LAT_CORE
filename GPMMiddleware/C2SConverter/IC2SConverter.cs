@@ -12,6 +12,11 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.C2SConverter
     /// </summary>
     internal interface IC2SConverter
     {
+        /// <summary>
+        /// AGVC 狀態數據轉成AGVS定義的數據
+        /// </summary>
+        /// <param name="agvc"></param>
+        /// <returns></returns>
         object StateConvert(IAGVC agvc);
     }
 }

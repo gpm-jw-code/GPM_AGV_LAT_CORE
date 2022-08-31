@@ -5,6 +5,8 @@ using GangHaoAGV.AGV;
 using System.Threading.Tasks;
 using GPM_AGV_LAT_CORE.AGVC.AGVCStates;
 using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
+using System.Collections.Generic;
+using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
 
 namespace GPM_AGV_LAT_CORE.AGVC
 {
@@ -19,6 +21,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
         public string EQName => string.Join("_", new object[] { agvcType.ToString(), Index.ToString("X3") });
 
         public IAgvcInfoToAgvs agvcInfos { get; set; }
+        public List<clsHostOrder> orderList_LAT { get; set; } = new List<clsHostOrder>();
 
         public event EventHandler StateOnChanged;
 
@@ -26,19 +29,12 @@ namespace GPM_AGV_LAT_CORE.AGVC
         {
             agvcStates.States.EConnectionState = CONNECTION_STATE.CONNECTING;
             AGVInterface = new cAGV(agvcParameters.tcpParams.HostIP);
-            FetchCurrentState();
+            SyncState();
             return true;
         }
 
-        public void Emulation()
-        {
-            agvcStates.MapStates.globalCoordinate.x = DateTime.Now.Second * 3;
-            agvcStates.MapStates.globalCoordinate.y = DateTime.Now.Second + 12;
-            agvcStates.MapStates.globalCoordinate.r = DateTime.Now.Second + 50;
-        }
 
-
-        public async void FetchCurrentState()
+        public async void SyncState()
         {
             await Task.Delay(1);
             while (!AGVInterface.StatesPortConnected | AGVInterface.STATES == null)
@@ -63,7 +59,19 @@ namespace GPM_AGV_LAT_CORE.AGVC
             });
         }
 
-        private void BetteryStateSync()
+        public bool TryExecuteOrder(clsHostOrder order, out string message)
+        {
+            message = null;
+
+            //TODO 與車子確認是否可以執行任務
+
+            return true;
+        }
+
+        /// <summary>
+        /// 更新電池狀態
+        /// </summary>
+        virtual protected void BetteryStateSync()
         {
             agvcStates.BetteryState.remaining = AGVInterface.STATES.betteryState.remainPercent;
         }
@@ -76,5 +84,14 @@ namespace GPM_AGV_LAT_CORE.AGVC
             agvcStates.MapStates.globalCoordinate.r = locationInfo.r;
         }
 
+        void IAGVC.SyncOrdersState()
+        {
+            throw new NotImplementedException();
+        }
+
+        void IAGVC.SyncSyncOrderExecuteState()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

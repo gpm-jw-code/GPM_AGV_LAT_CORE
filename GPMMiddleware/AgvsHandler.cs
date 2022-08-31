@@ -1,8 +1,11 @@
 ﻿using GPM_AGV_LAT_CORE.AGVC;
 using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
 using GPM_AGV_LAT_CORE.AGVS;
+using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers;
+using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
 using GPM_AGV_LAT_CORE.GPMMiddleware.S2CConverter;
 using GPM_AGV_LAT_CORE.LATSystem;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,21 +46,49 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
 
         }
 
-        internal static void TaskDownloadHandle(object sender, object taskObject)
-        {
-            IAGVS agvs = (IAGVS)sender;
-            IAGVC agvc = null;
-            if (agvs.agvsType == LATSystem.AGVS_TYPES.KINGGALLENT)
-            {
-                Dictionary<string, object> _taskObj = (Dictionary<string, object>)taskObject;
-                //解析
-                string SID = _taskObj["SID"].ToString();
-                string EQName = _taskObj["EQName"].ToString();
-                Console.WriteLine("AGV(SID:{0}/EQName:{1}) TaskDownload: {2}", SID, EQName, agvc);
-                agvc = FindAGVCInKingGallent(SID);
-            }
 
+
+        /// <summary>
+        /// 處理晶捷能派車平台任務下載
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="taskObject"></param>
+        internal static void KingGellantTaskDownloadHandle(object sender, object taskObject)
+        {
+            KingGallentAGVS agvs = (KingGallentAGVS)sender;
+            IAGVC agvc = null;
+
+            Dictionary<string, object> _taskObj = (Dictionary<string, object>)taskObject;
+            //解析
+            string SID = _taskObj["SID"].ToString();
+            string EQName = _taskObj["EQName"].ToString();
+            agvc = FindAGVCInKingGallent(SID);
+
+            Console.WriteLine("AGV TaskDownload From {0} to {1} |Task Content: {2}", agvs.agvsType, agvc.GetType().Name, JsonConvert.SerializeObject(taskObject));
             IS2Converter converter = ConverterSelect(agvs, agvc);
+            clsHostOrder newOrder = new clsHostOrder()
+            {
+                RecieveTimeStamp = DateTime.Now,
+                FromAGVS = agvs,
+                ExecuteingAGVC = agvc,
+                State = ORDER_STATE.WAIT_EXECUTE,
+                TaskDownloadData = taskObject
+            };
+
+            OrderManerger.NewOrderJoin(newOrder);
+            ///找到車子後把任務提交給車子確認接不接
+
+            bool orderRecieved = agvc.TryExecuteOrder(newOrder, out string agvcMsg);
+
+            ///模擬完成訂單
+            Task.Factory.StartNew(async () =>
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1));
+                newOrder.State = ORDER_STATE.EXECUTING;
+                await Task.Delay(TimeSpan.FromSeconds(4));
+                newOrder.State = ORDER_STATE.COMPLETE;
+            });
+
             converter.TaskDownloadConvert(taskObject);
         }
 

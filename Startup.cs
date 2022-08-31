@@ -10,15 +10,24 @@ namespace GPM_AGV_LAT_CORE
 {
     public class Startup
     {
+
+        public Startup()
+        {
+
+        }
+
         public static GangHaoAGV.AGV.cAGV agv1;
         public static GangHaoAGV.AGV.cAGV agv2;
-        public static void StartService()
+        public static async Task StartService()
         {
-            EmulatorsManager.Start();
-            //TODO Read AGVS 
-            AGVS.AGVSManager.ConnectToHosts();
-            //TODO Read AGVC 
-            AGVC.AGVCManager.ConnectToAGVCs();
+            await Task.Delay(1).ContinueWith(tsk =>
+            {
+                Task.Run(() => EmulatorsManager.Start());
+                //TODO Read AGVS 
+                AGVS.AGVSManager.ConnectToHosts();
+                //TODO Read AGVC 
+                AGVC.AGVCManager.ConnectToAGVCs();
+            });
         }
     }
 }

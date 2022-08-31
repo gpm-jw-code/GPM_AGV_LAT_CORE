@@ -29,6 +29,7 @@ namespace GPM_AGV_LAT_CORE.AGVS
         public KingAllantAPI _agvsApi => (KingAllantAPI)agvsApi;
 
         public List<IAgvcInfoToAgvs> BindingAGVCInfoList { get; set; } = null;
+        public string VenderName { get; set; } = "晶捷能";
 
         public KingGallentAGVS()
         {
@@ -81,12 +82,7 @@ namespace GPM_AGV_LAT_CORE.AGVS
             }
         }
 
-        public void RegistAGVC()
-        {
-            int[] agvNos = new int[] { 1, 3, 5 };
-            //要準備SSID啥的
-            _agvsApi.OnlineRequest(agvNos);
-        }
+
 
         public void ReportAGVCState(object agvcState)
         {
