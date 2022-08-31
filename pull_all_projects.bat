@@ -1,10 +1,11 @@
+git pull
 cd ../
 cd ganghaoagv
-git clone http://gitlab.gpmcorp.com.tw/lat/ganghaoagv.git
+git pull
 cd ../
 cd gpm_agv_lat_web
-git clone http://gitlab.gpmcorp.com.tw/lat/gpm_agv_lat_web.git
+git pull
 cd ../
 cd gpm_agv_lat_app
-git clone http://gitlab.gpmcorp.com.tw/lat/gpm_agv_lat_app.git
+git pull
 pause
