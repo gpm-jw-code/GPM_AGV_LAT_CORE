@@ -19,32 +19,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
     /// </summary>
     internal class AgvsHandler
     {
-        internal static void HostMessageHandle(object sender, object hostData)
-        {
-            string hostSourceName = sender.GetType().Name;
-            Console.WriteLine("HOST Message Rev-From TYPE: {0} | Data:{1}", hostSourceName, hostData);
-            AGVSHostDataHandleWork(hostSourceName, hostData);
-        }
 
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private static void AGVSHostDataHandleWork(string source, object hostData)
-        {
-            KingGallentAGVS king2G = new KingGallentAGVS();
-            if (source == king2G.GetType().Name)
-            {
-                King2GPM(hostData);
-            }
-        }
-
-
-        public static void King2GPM(object hostData)
-        {
-            Console.WriteLine("KingAllan Host Data will be Handled {0}", hostData);
-
-        }
 
 
 

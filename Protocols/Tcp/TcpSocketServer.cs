@@ -33,7 +33,7 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
             }
             catch (Exception ex)
             {
-                throw ex;
+                return false;
             }
         }
 

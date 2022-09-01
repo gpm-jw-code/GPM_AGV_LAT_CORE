@@ -86,12 +86,26 @@ namespace GPM_AGV_LAT_CORE.AGVC
 
         void IAGVC.SyncOrdersState()
         {
-            throw new NotImplementedException();
+            try
+            {
+
+            }
+            catch (NotImplementedException)
+            {
+                Console.WriteLine("還沒實作 SyncOrdersState");
+            }
         }
 
         void IAGVC.SyncSyncOrderExecuteState()
         {
-            throw new NotImplementedException();
+            try
+            {
+
+            }
+            catch (NotImplementedException)
+            {
+                Console.WriteLine("還沒實作 SyncSyncOrderExecuteState");
+            }
         }
     }
 }
