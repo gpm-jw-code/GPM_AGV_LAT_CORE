@@ -82,11 +82,14 @@ namespace GPM_AGV_LAT_CORE.AGVS
             }
         }
 
-
-
-        public void ReportAGVCState(object agvcState)
+        public async Task<bool> ReportAGVCState(IAGVC agvc, AGVCStateStore agvcState)
         {
-            _agvsApi.RunningStatusReport(agvcState);
+            HandshakeRunningStatusReportHelper stateReport = new HandshakeRunningStatusReportHelper(agvc.agvcInfos as AgvcInfoForKingAllant);
+            var reportObj = stateReport.CreateStateReportDataModel(new RunningStateReportModel
+            {
+                AGVStatus = (int)agvcState.States.ERunningState
+            });
+            return _agvsApi.RunningStatusReport(reportObj);
         }
     }
 }

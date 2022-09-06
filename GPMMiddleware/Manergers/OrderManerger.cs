@@ -1,4 +1,7 @@
-﻿using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
+﻿using GPM_AGV_LAT_CORE.AGVC;
+using GPM_AGV_LAT_CORE.AGVS;
+using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
+using GPM_AGV_LAT_CORE.LATSystem;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,12 +20,19 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers
 
         public static List<clsHostOrder> OrderList { get; private set; } = new List<clsHostOrder>();
 
+        /// <summary>
+        /// 加入一筆派車訂單
+        /// </summary>
+        /// <param name="newOrder"></param>
+        /// <returns></returns>
         internal static clsHostOrder NewOrderJoin(clsHostOrder newOrder)
         {
             newOrder.PropertyChanged += NewOrder_PropertyChanged;
             //定流水號
             newOrder.OrderNo = OrderList.Count;
+            newOrder.State = ORDER_STATE.WAIT_EXECUTE;
             OrderList.Add(newOrder);
+
             OnNewOrderCreate?.Invoke("OrderManerger", newOrder);
             return newOrder;
         }
@@ -31,5 +41,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers
         {
             OnNewOrderCreate?.Invoke("OrderManerger", (clsHostOrder)sender);
         }
+
+
     }
 }

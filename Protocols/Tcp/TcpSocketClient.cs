@@ -80,18 +80,18 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
         }
 
 
-        internal void Send(string data)
+        internal SocketStates Send(string data, bool waitReply)
         {
-            Send(Encoding.ASCII.GetBytes(data));
+            return Send(Encoding.ASCII.GetBytes(data), waitReply);
             //tcpClient.Client.Send(,);
         }
 
-        internal SocketStates Send(byte[] data)
+        internal SocketStates Send(byte[] data, bool waitReply)
         {
             serverReply.Reset();
             tcpClient.Client.Send(data, data.Length, SocketFlags.None);
-            serverReply.WaitOne();
-            Console.WriteLine("return:{0}", serverReplyState.ASCIIRev);
+            if (waitReply)
+                serverReply.WaitOne();
             return serverReplyState;
         }
 

@@ -28,10 +28,23 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             }
         }
 
+
+
+        public HandshakeResponseDataHelper(Dictionary<string, object> remoteTaskObj)
+        {
+            remoteObj = remoteTaskObj;
+        }
         public HandshakeResponseDataHelper(string remoteASCIIRev)
         {
-            Jsonstr = remoteASCIIRev.Replace("*CR", "");
-            remoteObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(Jsonstr);
+            try
+            {
+
+                Jsonstr = remoteASCIIRev.Replace("*CR", "");
+                remoteObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(Jsonstr);
+            }
+            catch (Exception ex)
+            {
+            }
         }
 
         public Dictionary<string, object> Create0102MessageData(int RemoteMode)
@@ -72,6 +85,43 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
                 {"0106",new Dictionary<string, object>()
                 {
                     {"Time stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss") },
+                    {"Return Code",ReturnCode }
+                } }
+            };
+            return _remoteObj;
+        }
+
+        /// <summary>
+        /// Task Download Acknowledge(0301的回覆)
+        /// </summary>
+        /// <param name="ReturnCode"></param>
+        /// <returns></returns>
+        internal Dictionary<string, object> create0302MessaeData(int ReturnCode)
+        {
+            _remoteObj["Header"] = new Dictionary<string, object>()
+            {
+                {"0302",new Dictionary<string, object>()
+                {
+                    {"Return Code",ReturnCode }
+                } }
+            };
+            return _remoteObj;
+        }
+
+
+
+
+        /// <summary>
+        /// Task Feedback Acknowledge(0303的回覆)
+        /// </summary>
+        /// <param name="ReturnCode"> 0:OK ; Others: NG ,Error</param>
+        /// <returns></returns>
+        internal Dictionary<string, object> create0304MessaeData(int ReturnCode)
+        {
+            _remoteObj["Header"] = new Dictionary<string, object>()
+            {
+                {"0304",new Dictionary<string, object>()
+                {
                     {"Return Code",ReturnCode }
                 } }
             };

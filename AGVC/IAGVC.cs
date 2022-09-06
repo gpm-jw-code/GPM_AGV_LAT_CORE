@@ -25,8 +25,10 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// </summary>
         AGVC_TYPES agvcType { get; set; }
 
+        IAGVS agvsBinding { get; set; }
+
         /// <summary>
-        /// 接受的派車任務清單
+        /// 接受的派車任務清單(LAT內部)
         /// </summary>
         List<clsHostOrder> orderList_LAT { get; set; }
 
@@ -40,6 +42,9 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// </summary>
         AGVCStateStore agvcStates { get; set; }
 
+        /// <summary>
+        /// AGVC在指定AGVS上的資訊
+        /// </summary>
         IAgvcInfoToAgvs agvcInfos { get; set; }
 
         /// <summary>
@@ -49,30 +54,37 @@ namespace GPM_AGV_LAT_CORE.AGVC
         bool ConnectToAGV();
 
         /// <summary>
-        /// 同步車子狀態
+        /// 開始同步車子狀態
         /// </summary>
-        void SyncState();
+        Task SyncState();
         /// <summary>
         /// 同步訂單列表
         /// </summary>
-        void SyncOrdersState();
+        Task SyncOrdersState();
         /// <summary>
         /// 同步訂單執行狀況
         /// </summary>
-        void SyncSyncOrderExecuteState();
+        Task SyncSyncOrderExecuteState();
 
+        /// <summary>
+        /// 將訂單加入列表
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        void AddHostOrder(clsHostOrder order);
 
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="message"></param>
-        /// <returns></returns>
-        bool TryExecuteOrder(clsHostOrder order, out string message);
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        void AGVCDataConvertToLATFormat(object agvcData);
 
         /// <summary>
-        /// 車輛狀態或訂單狀態變化
+        /// 車輛狀態變化
         /// </summary>
-        event EventHandler StateOnChanged;
+        event EventHandler<AGVCStateStore> StateOnChanged;
+        event EventHandler OrderStateOnChnaged;
 
     }
 }

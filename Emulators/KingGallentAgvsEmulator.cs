@@ -62,6 +62,15 @@ namespace GPM_AGV_LAT_CORE.Emulators
             {
                 returnData = helper.create0106MessageData(0);
             }
+            else if (headerCode == "0302") //0301 TaskDownload 的回覆
+            {
+
+            }
+            else if (headerCode == "0303") // Task Feedback
+            {
+                returnData = helper.create0304MessaeData(0);
+
+            }
 
 
             if (returnData != null)
@@ -76,7 +85,7 @@ namespace GPM_AGV_LAT_CORE.Emulators
             }
 
         }
-        public void TaskDownload(string SID, string EQName)
+        public void TaskDownload(string SID, string EQName, string taskName)
         {
             if (clients.Count == 0)
                 return;
@@ -88,7 +97,7 @@ namespace GPM_AGV_LAT_CORE.Emulators
                 client = clients.First().Value;
             }
             HandshakeRunningStatusReportHelper requestHelper = new HandshakeRunningStatusReportHelper(SID, EQName);
-            client.Send(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(requestHelper.CreateTaskDownload()) + "*CR"));
+            client.Send(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(requestHelper.CreateTaskDownload(taskName)) + "*CR"));
         }
     }
 }

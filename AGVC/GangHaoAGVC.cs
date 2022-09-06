@@ -1,110 +1,97 @@
 ﻿using GPM_AGV_LAT_CORE.LATSystem;
-using GPM_AGV_LAT_CORE.Parameters;
 using System;
 using GangHaoAGV.AGV;
 using System.Threading.Tasks;
 using GPM_AGV_LAT_CORE.AGVC.AGVCStates;
-using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
-using System.Collections.Generic;
 using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
+using System.Linq;
+using System.Collections.Generic;
+using GangHaoAGV.API;
 
 namespace GPM_AGV_LAT_CORE.AGVC
 {
-    public class GangHaoAGVC : IAGVC
+    public class GangHaoAGVC : AGVCBase
     {
-        public string ID { get; set; } = "0001";
-        public AGVC_TYPES agvcType { get; set; } = AGVC_TYPES.GangHau;
-        public AGVCParameters agvcParameters { get; set; } = new AGVCParameters();
-        public AGVCStateStore agvcStates { get; set; } = new AGVCStateStore();
-        public cAGV AGVInterface { get; set; }
-        public int Index { get; set; } = 0;
-        public string EQName => string.Join("_", new object[] { agvcType.ToString(), Index.ToString("X3") });
 
-        public IAgvcInfoToAgvs agvcInfos { get; set; }
-        public List<clsHostOrder> orderList_LAT { get; set; } = new List<clsHostOrder>();
+        public ServerAPI RDSCoreServer = new ServerAPI() { baseUrl = SystemParams.GangHaoRDSCoreServerUrl };
 
-        public event EventHandler StateOnChanged;
-
-        public bool ConnectToAGV()
+        public GangHaoAGVC()
         {
-            agvcStates.States.EConnectionState = CONNECTION_STATE.CONNECTING;
+            agvcType = AGVC_TYPES.GangHau;
+        }
+
+        public cAGV AGVInterface { get; set; }
+
+        public new string EQName => string.Join("_", new object[] { agvcType.ToString(), Index.ToString("X3") });
+
+        protected override bool ConnectoAGVInstance()
+        {
             AGVInterface = new cAGV(agvcParameters.tcpParams.HostIP);
-            SyncState();
             return true;
         }
 
-
-        public async void SyncState()
+        protected override async Task<AGVCStateStore> SyncStateInstance()
         {
-            await Task.Delay(1);
             while (!AGVInterface.StatesPortConnected | AGVInterface.STATES == null)
             {
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 Console.WriteLine("等待罡豪State Port 連線...");
             }
-            Console.WriteLine("罡豪State Port 已連線,開始同步車子狀態");
-            agvcStates.States.EConnectionState = CONNECTION_STATE.CONNECTED;
 
-            _ = Task.Run(async () =>
+            AGVCStateStore state = new AGVCStateStore();
+            state.BetteryState.remaining = AGVInterface.STATES.betteryState.remainPercent;
+            state.MapStates.globalCoordinate.x = AGVInterface.STATES.locationInfo.x;
+            state.MapStates.globalCoordinate.y = AGVInterface.STATES.locationInfo.y;
+            state.MapStates.globalCoordinate.r = AGVInterface.STATES.locationInfo.r;
+
+            return state;
+        }
+
+        protected override Task SyncOrderStateInstance()
+        {
+            return base.SyncOrderStateInstance();
+        }
+
+
+
+        protected override Task SyncSyncOrderExecuteStateInstance()
+        {
+            Task.Run(async () =>
             {
-
-                while (true)
+                List<string> orderIDList = orderList_LAT.Select(order => order.latOrderDetail.taskName).ToList();
+                foreach (var order in orderList_LAT)
                 {
-                    await Task.Delay(TimeSpan.FromMilliseconds(1000));
-                    LocationStateSync();
-                    BetteryStateSync();
-                    agvcStates.States.EConnectionState = AGVInterface.StatesPortConnected ? CONNECTION_STATE.CONNECTED : CONNECTION_STATE.CONNECTING;
-                    StateOnChanged?.Invoke(this, EventArgs.Empty);
+                    var orderID = order.latOrderDetail.taskName;
+                    GangHaoAGV.Models.Order.OrderDetails orderState = await RDSCoreServer.QueryOrderState(orderID);
+                    order.State = GetLatOrderStateByGangOrderState(orderState.state);
                 }
             });
+            base.SyncSyncOrderExecuteStateInstance();
+            return Task.CompletedTask;
         }
 
-        public bool TryExecuteOrder(clsHostOrder order, out string message)
+        private ORDER_STATE GetLatOrderStateByGangOrderState(string gangHaoTaskState)
         {
-            message = null;
-
-            //TODO 與車子確認是否可以執行任務
-
-            return true;
-        }
-
-        /// <summary>
-        /// 更新電池狀態
-        /// </summary>
-        virtual protected void BetteryStateSync()
-        {
-            agvcStates.BetteryState.remaining = AGVInterface.STATES.betteryState.remainPercent;
-        }
-
-        private void LocationStateSync()
-        {
-            var locationInfo = AGVInterface.STATES.locationInfo;
-            agvcStates.MapStates.globalCoordinate.x = locationInfo.x;
-            agvcStates.MapStates.globalCoordinate.y = locationInfo.y;
-            agvcStates.MapStates.globalCoordinate.r = locationInfo.r;
-        }
-
-        void IAGVC.SyncOrdersState()
-        {
-            try
+            switch (gangHaoTaskState)
             {
-
-            }
-            catch (NotImplementedException)
-            {
-                Console.WriteLine("還沒實作 SyncOrdersState");
-            }
-        }
-
-        void IAGVC.SyncSyncOrderExecuteState()
-        {
-            try
-            {
-
-            }
-            catch (NotImplementedException)
-            {
-                Console.WriteLine("還沒實作 SyncSyncOrderExecuteState");
+                case "CREATED":
+                    return ORDER_STATE.EXECUTING;
+                case "TOBEDISPATCHED":
+                    return ORDER_STATE.WAIT_EXECUTE;
+                case "RUNNING":
+                    return ORDER_STATE.EXECUTING;
+                case "FINISHED":
+                    return ORDER_STATE.COMPLETE;
+                case "FAILED":
+                    return ORDER_STATE.FAILED;
+                case "STOPPED":
+                    return ORDER_STATE.STOPPED;
+                case "Error":
+                    return ORDER_STATE.ERROR;
+                case "WAITING":
+                    return ORDER_STATE.WAIT_EXECUTE;
+                default:
+                    return ORDER_STATE.WAIT_EXECUTE;
             }
         }
     }

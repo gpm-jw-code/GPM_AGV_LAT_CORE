@@ -15,7 +15,8 @@ namespace GPM_AGV_LAT_CORE.LATSystem
         /// <summary>
         /// 晶捷能
         /// </summary>
-        KINGGALLENT
+        KINGGALLENT,
+        Unkown
     }
 
     /// <summary>
@@ -27,7 +28,8 @@ namespace GPM_AGV_LAT_CORE.LATSystem
         /// <summary>
         /// 罡豪
         /// </summary>
-        GangHau
+        GangHau,
+        Unkown
     }
 
 }

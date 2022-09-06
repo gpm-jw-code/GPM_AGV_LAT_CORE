@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,16 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
         public string Jsonstr { get; set; }
         private Dictionary<string, object> returnObj;
 
-
+        public HandshakeRunningStatusReportHelper(AgvcInfoForKingAllant infos, int SystemBytes = 1)
+        {
+            returnObj = new Dictionary<string, object>()
+            {
+                    {"SID",infos.SID},
+                    {"EQName",infos.EQName},
+                    {"System Bytes",SystemBytes},
+                    {"Header", new Dictionary<string,object>() },
+            };
+        }
         public HandshakeRunningStatusReportHelper(string SID, string EQName, int SystemBytes = 1)
         {
             returnObj = new Dictionary<string, object>()
@@ -124,12 +134,36 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
         }
 
 
-        public Dictionary<string, object> CreateTaskDownload()
+        public Dictionary<string, object> CreateTaskDownload(string taskName)
         {
             returnObj["Header"] = new Dictionary<string, object>()
             {
                 { "0301" , new Dictionary<string, object>(){
                     {"Time stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss")},
+                    {"Task Name",taskName},
+                } }
+            };
+            return returnObj;
+        }
+
+        /// <summary>
+        /// Task Feedback
+        /// </summary>
+        /// <param name="ReturnCode"></param>
+        /// <returns></returns>
+        internal Dictionary<string, object> createTaskFeedback(string taskName, string taskSimplex, int taskSequence,
+                                                                    int pointIndex, int taskStatus)
+        {
+            returnObj["Header"] = new Dictionary<string, object>()
+            {
+                {"0303",new Dictionary<string, object>()
+                {
+                    {"Time stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss") },
+                    {"Task Name",taskName },
+                    {"Task Simplex",taskSimplex },
+                    {"Task Sequence",taskSequence },
+                    {"Point Index",pointIndex },
+                    {"Task Status",taskStatus },
                 } }
             };
             return returnObj;

@@ -23,7 +23,6 @@ namespace GPM_AGV_LAT_CORE.Emulators
         }
 
 
-
         public override void Server_OnClientMessageRev(object sender, SocketStates _SocketStates)
         {
             //

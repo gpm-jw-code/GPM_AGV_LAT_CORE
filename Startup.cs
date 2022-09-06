@@ -16,8 +16,6 @@ namespace GPM_AGV_LAT_CORE
 
         }
 
-        public static GangHaoAGV.AGV.cAGV agv1;
-        public static GangHaoAGV.AGV.cAGV agv2;
         public static async Task StartService()
         {
             await Task.Delay(1).ContinueWith(tsk =>
@@ -26,6 +24,10 @@ namespace GPM_AGV_LAT_CORE
                 //TODO Read AGVS 
                 AGVS.AGVSManager.ConnectToHosts();
                 //TODO Read AGVC 
+                AGVC.AGVCManager.AGVCInfoBinding();
+
+                AGVC.AGVCManager.EventsRegist();
+
                 AGVC.AGVCManager.ConnectToAGVCs();
             });
         }

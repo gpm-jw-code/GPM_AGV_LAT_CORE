@@ -19,6 +19,9 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
         /// <summary>
         /// 已完成
         /// </summary>
-        COMPLETE
+        COMPLETE,
+        STOPPED,
+        FAILED,
+        ERROR
     }
 }

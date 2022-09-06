@@ -1,4 +1,5 @@
-﻿using GPM_AGV_LAT_CORE.AGVC.AGVCStates;
+﻿using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
+using GPM_AGV_LAT_CORE.AGVC.AGVCStates;
 using GPM_AGV_LAT_CORE.AGVS;
 using GPM_AGV_LAT_CORE.GPMMiddleware;
 using GPM_AGV_LAT_CORE.LATSystem;
@@ -16,18 +17,8 @@ namespace GPM_AGV_LAT_CORE.AGVC
         public static List<IAGVC> AGVCList = new List<IAGVC>()
         {
            new GangHaoAGVC() {ID="0001",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.233"} }},
-           new GangHaoAGVC() {ID="0002",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.111"} }},
+           new GPMAGVC() {ID="0002",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.111"} }},
         };
-
-
-        /// <summary>
-        /// 取得罡豪AGV車
-        /// </summary>
-        public static List<IAGVC> GangHaoAGVList => AGVCList.FindAll(agv => agv.agvcType == AGVC_TYPES.GangHau);
-        /// <summary>
-        /// 取得GPMAGV車
-        /// </summary>
-        public static List<IAGVC> GpmAGVList => AGVCList.FindAll(agv => agv.agvcType == AGVC_TYPES.GPM);
 
         /// <summary>
         /// 取得所有IDLE狀態的AGV
@@ -40,26 +31,29 @@ namespace GPM_AGV_LAT_CORE.AGVC
             }
         }
 
-
+        internal static void EventsRegist()
+        {
+            foreach (IAGVC agvc in AGVCList)
+            {
+                agvc.StateOnChanged += AgvcHandler.StateOnChangedHandler;
+                agvc.OrderStateOnChnaged += AgvcHandler.OrderStateOnChangeHandler;
+            }
+        }
         /// <summary>
         /// 與所有的AGV車連線喔
         /// </summary>
         public static void ConnectToAGVCs()
         {
-            AGVCInfoBinding();
             foreach (IAGVC agvc in AGVCList.FindAll(agvc => agvc.agvcInfos != null))
             {
-                if (agvc.agvcType == AGVC_TYPES.GangHau)
-                    agvc.StateOnChanged += AgvcHandler.GangHaoAgvcStateChangedHandle;
-                else if (agvc.agvcType == AGVC_TYPES.GPM)
-                    agvc.StateOnChanged += AgvcHandler.GPMAgvcStateChangedHandle;
                 agvc.ConnectToAGV();
+                agvc.SyncState();
                 agvc.SyncOrdersState();
                 agvc.SyncSyncOrderExecuteState();
             }
         }
 
-        private static int AGVCInfoBinding()
+        public static int AGVCInfoBinding()
         {
             int bindedAgvcNum = 0;
             foreach (var item in AGVSManager.CurrentAGVS.BindingAGVCInfoList)
@@ -68,11 +62,35 @@ namespace GPM_AGV_LAT_CORE.AGVC
                 if (agvcSelected != null)
                 {
                     agvcSelected.agvcInfos = item;
+                    agvcSelected.agvsBinding = AGVSManager.CurrentAGVS;
                     bindedAgvcNum++;
                 }
             }
             Console.WriteLine("綁定了 {0} 台車", bindedAgvcNum);
             return bindedAgvcNum;
         }
+
+        /// <summary>
+        /// 根據SID找到一台被晶捷能派車系統註冊的車子
+        /// </summary>
+        /// <param name="SID"></param>
+        /// <returns></returns>
+        public static IAGVC FindAGVCInKingGallentBySID(string SID)
+        {
+            var agcList = AGVCManager.AGVCList.FindAll(agv => agv.agvcInfos.GetType().Name == "AgvcInfoForKingAllant");
+            if (agcList.Count == 0)
+            {
+                Console.WriteLine("找不到任何車屬於晶捷能派車系統");
+                return null;
+            }
+            var agvc = agcList.FirstOrDefault(agv => ((AgvcInfoForKingAllant)agv.agvcInfos).SID == SID);
+            if (agvc == null)
+            {
+                Console.WriteLine("找不到任何車SID為{0}", SID);
+                return null;
+            }
+            return agvc;
+        }
+
     }
 }

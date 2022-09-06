@@ -68,7 +68,7 @@ namespace GPM_AGV_LAT_CORE.AGVS
         /// 上報AGV車狀態
         /// </summary>
         /// <param name="agvcState"></param>
-        void ReportAGVCState(object agvcState);
+        Task<bool> ReportAGVCState(IAGVC agvc, AGVCStateStore agvcState);
 
         #endregion
 

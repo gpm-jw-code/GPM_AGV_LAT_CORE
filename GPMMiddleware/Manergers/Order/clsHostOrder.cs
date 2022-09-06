@@ -16,6 +16,13 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
     /// </summary>
     public class clsHostOrder : INotifyPropertyChanged
     {
+
+        public clsHostOrder(IAGVS fromAGVS, IAGVC toAGVC, object TaskDownloadData)
+        {
+            this.FromAGVS = new clsOrderAGVSinfo(fromAGVS.agvsType);
+            this.ExecuteingAGVC = new clsOrderAGVCinfo(toAGVC.agvcType, toAGVC.ID, toAGVC.agvcInfos);
+        }
+
         private DateTime _CompleteTimeStamp;
         private ORDER_STATE _State = ORDER_STATE.WAIT_EXECUTE;
         /// <summary>
@@ -44,11 +51,11 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
         /// <summary>
         /// 執行訂單的AGVC
         /// </summary>
-        public IAGVC ExecuteingAGVC { get; set; }
+        public clsOrderAGVCinfo ExecuteingAGVC { get; set; }
         /// <summary>
         /// 發派任務的AGVS
         /// </summary>
-        public IAGVS FromAGVS { get; set; }
+        public clsOrderAGVSinfo FromAGVS { get; set; }
         /// <summary>
         /// 從遠端接收的時間
         /// </summary>
@@ -71,8 +78,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
         /// <summary>
         /// 遠端發送任務物件
         /// </summary>
-        public object TaskDownloadData { get; set; }
-
+        private object _TaskDownloadData;
 
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -80,6 +86,9 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName) { });
         }
+
+        public clsLATOrderDetail latOrderDetail { get; internal set; }
+
 
     }
 }
