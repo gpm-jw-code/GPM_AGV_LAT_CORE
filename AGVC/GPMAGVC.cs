@@ -26,10 +26,8 @@ namespace GPM_AGV_LAT_CORE.AGVC
             return true;
         }
 
-        protected override async Task<AGVCStateStore> SyncStateInstance()
+        protected override async Task SyncStateInstance()
         {
-            await Task.Delay(1);
-            return new AGVCStateStore();
         }
         protected override Task SyncOrderStateInstance()
         {

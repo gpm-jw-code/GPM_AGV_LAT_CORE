@@ -21,6 +21,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
         {
             this.FromAGVS = new clsOrderAGVSinfo(fromAGVS.agvsType);
             this.ExecuteingAGVC = new clsOrderAGVCinfo(toAGVC.agvcType, toAGVC.ID, toAGVC.agvcInfos);
+            this.TaskDownloadData = TaskDownloadData;
         }
 
         private DateTime _CompleteTimeStamp;
@@ -75,10 +76,11 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
                 }
             }
         }
+
         /// <summary>
         /// 遠端發送任務物件
         /// </summary>
-        private object _TaskDownloadData;
+        public object TaskDownloadData { get; private set; }
 
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -87,6 +89,9 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName) { });
         }
 
+        /// <summary>
+        /// LAT格式的ORDER
+        /// </summary>
         public clsLATOrderDetail latOrderDetail { get; internal set; }
 
 

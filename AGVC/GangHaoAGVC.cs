@@ -30,21 +30,21 @@ namespace GPM_AGV_LAT_CORE.AGVC
             return true;
         }
 
-        protected override async Task<AGVCStateStore> SyncStateInstance()
+        protected override async Task SyncStateInstance()
         {
             while (!AGVInterface.StatesPortConnected | AGVInterface.STATES == null)
             {
+                agvcStates.States.EConnectionState = CONNECTION_STATE.CONNECTING;
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 Console.WriteLine("等待罡豪State Port 連線...");
             }
 
-            AGVCStateStore state = new AGVCStateStore();
-            state.BetteryState.remaining = AGVInterface.STATES.betteryState.remainPercent;
-            state.MapStates.globalCoordinate.x = AGVInterface.STATES.locationInfo.x;
-            state.MapStates.globalCoordinate.y = AGVInterface.STATES.locationInfo.y;
-            state.MapStates.globalCoordinate.r = AGVInterface.STATES.locationInfo.r;
+            agvcStates.States.EConnectionState = CONNECTION_STATE.CONNECTED;
+            agvcStates.BetteryState.remaining = AGVInterface.STATES.betteryState.remainPercent;
+            agvcStates.MapStates.globalCoordinate.x = AGVInterface.STATES.locationInfo.x;
+            agvcStates.MapStates.globalCoordinate.y = AGVInterface.STATES.locationInfo.y;
+            agvcStates.MapStates.globalCoordinate.r = AGVInterface.STATES.locationInfo.r;
 
-            return state;
         }
 
         protected override Task SyncOrderStateInstance()
@@ -54,9 +54,9 @@ namespace GPM_AGV_LAT_CORE.AGVC
 
 
 
-        protected override Task SyncSyncOrderExecuteStateInstance()
+        protected override async Task SyncSyncOrderExecuteStateInstance()
         {
-            Task.Run(async () =>
+            await Task.Run(async () =>
             {
                 List<string> orderIDList = orderList_LAT.Select(order => order.latOrderDetail.taskName).ToList();
                 foreach (var order in orderList_LAT)
@@ -66,8 +66,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
                     order.State = GetLatOrderStateByGangOrderState(orderState.state);
                 }
             });
-            base.SyncSyncOrderExecuteStateInstance();
-            return Task.CompletedTask;
+            await base.SyncSyncOrderExecuteStateInstance();
         }
 
         private ORDER_STATE GetLatOrderStateByGangOrderState(string gangHaoTaskState)

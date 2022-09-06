@@ -54,7 +54,9 @@ namespace GPM_AGV_LAT_CORE.AGVC
         public bool ConnectToAGV()
         {
             agvcStates.States.EConnectionState = CONNECTION_STATE.CONNECTING;
-            return ConnectoAGVInstance();
+            bool connected = ConnectoAGVInstance();
+            agvcStates.States.EConnectionState = connected ? CONNECTION_STATE.CONNECTED : CONNECTION_STATE.DISCONNECT;
+            return connected;
         }
 
         virtual protected bool ConnectoAGVInstance()
@@ -70,7 +72,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 try
                 {
-                    agvcStates = await SyncStateInstance();
+                    await SyncStateInstance();
                     StateChangedDelagate();
                     WriteLog(" 車體狀態完成同步");
                 }
@@ -123,7 +125,6 @@ namespace GPM_AGV_LAT_CORE.AGVC
                 agvcStates.States.ERunningState = RUNNING_STATE.IDLE;
 
             return Task.CompletedTask;
-            //throw new NotImplementedException();
         }
 
         virtual protected async Task SyncOrderStateInstance()
@@ -131,7 +132,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
             throw new NotImplementedException();
         }
 
-        virtual protected async Task<AGVCStateStore> SyncStateInstance()
+        virtual protected async Task SyncStateInstance()
         {
             throw new NotImplementedException();
         }
