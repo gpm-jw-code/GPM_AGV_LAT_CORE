@@ -69,7 +69,8 @@ namespace GPM_AGV_LAT_CORE.AGVS
                 var revObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(state.JSONCmd);
                 OnHostMessageReceived?.Invoke(this, revObj);
                 var headerdata = JsonConvert.DeserializeObject<Dictionary<string, object>>(revObj["Header"].ToString());
-                if (headerdata.ContainsKey("0301"))
+
+                if (headerdata.ContainsKey("0301") | headerdata.ContainsKey("0305"))
                     OnTaskDownloadRecieved?.Invoke(this, revObj);
                 else
                 {

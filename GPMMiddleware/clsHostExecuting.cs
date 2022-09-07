@@ -1,5 +1,7 @@
 ﻿using GPM_AGV_LAT_CORE.AGVC;
 using GPM_AGV_LAT_CORE.AGVS;
+using GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor;
+using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
 using GPM_AGV_LAT_CORE.LATSystem;
 using System;
 using System.Collections.Generic;
@@ -9,21 +11,26 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
+namespace GPM_AGV_LAT_CORE.GPMMiddleware
 {
     /// <summary>
     /// 派工任務訂單
     /// </summary>
-    public class clsHostOrder : INotifyPropertyChanged
+    public class clsHostExecuting : INotifyPropertyChanged
     {
-
-        public clsHostOrder(IAGVS fromAGVS, IAGVC toAGVC, object TaskDownloadData)
+        public clsHostExecuting(IAGVS fromAGVS, IAGVC toAGVC, object TaskDownloadData)
         {
             this.FromAGVS = new clsOrderAGVSinfo(fromAGVS.agvsType);
-            this.ExecuteingAGVC = new clsOrderAGVCinfo(toAGVC.agvcType, toAGVC.ID, toAGVC.agvcInfos);
+            this.ExecuteingAGVC = new clsOrderAGVCinfo(toAGVC.agvcType, toAGVC.EQName, toAGVC.agvcInfos);
             this.TaskDownloadData = TaskDownloadData;
         }
-
+        public clsHostExecuting(IAGVS fromAGVS, IAGVC toAGVC, object TaskDownloadData, EXECUTE_TYPE EExecuteType)
+        {
+            this.FromAGVS = new clsOrderAGVSinfo(fromAGVS.agvsType);
+            this.ExecuteingAGVC = new clsOrderAGVCinfo(toAGVC.agvcType, toAGVC.EQName, toAGVC.agvcInfos);
+            this.TaskDownloadData = TaskDownloadData;
+            this.EExecuteType = EExecuteType;
+        }
         private DateTime _CompleteTimeStamp;
         private ORDER_STATE _State = ORDER_STATE.WAIT_EXECUTE;
         /// <summary>
@@ -49,6 +56,8 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
                 }
             }
         }
+
+        public EXECUTE_TYPE EExecuteType { get; set; }
         /// <summary>
         /// 執行訂單的AGVC
         /// </summary>
@@ -94,6 +103,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
         /// </summary>
         public clsLATOrderDetail latOrderDetail { get; internal set; }
 
+        public clsAGVCReset agvcReset { get; set; } = new clsAGVCReset();
 
     }
 }

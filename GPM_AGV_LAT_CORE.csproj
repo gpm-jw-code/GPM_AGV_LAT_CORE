@@ -146,11 +146,15 @@
     <Compile Include="GPMMiddleware\AgvC2SBridge.cs" />
     <Compile Include="GPMMiddleware\AgvcHandler.cs" />
     <Compile Include="GPMMiddleware\AgvsHandler.cs" />
+    <Compile Include="GPMMiddleware\AgvsExcutingPreProcessor.cs" />
+    <Compile Include="GPMMiddleware\Manergers\Order\clsAGVCReset.cs" />
+    <Compile Include="GPMMiddleware\OrderConverter.cs" />
+    <Compile Include="GPMMiddleware\ExecutingTransfer.cs" />
     <Compile Include="GPMMiddleware\Manergers\Order\clsLATOrderDetail.cs" />
     <Compile Include="GPMMiddleware\Manergers\Order\clsOrderAGVCinfo.cs" />
     <Compile Include="GPMMiddleware\Manergers\Order\clsOrderAGVSinfo.cs" />
     <Compile Include="GPMMiddleware\Manergers\OrderManerger.cs" />
-    <Compile Include="GPMMiddleware\Manergers\Order\clsHostOrder.cs" />
+    <Compile Include="GPMMiddleware\clsHostExecuting.cs" />
     <Compile Include="GPMMiddleware\Manergers\Order\OrderEnums.cs" />
     <Compile Include="LATSystem\TYPES.cs" />
     <Compile Include="LATSystem\SystemParams.cs" />

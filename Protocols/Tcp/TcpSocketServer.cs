@@ -21,7 +21,6 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
         {
             try
             {
-
                 tcpListener = new TcpListener(IPAddress.Parse(hostIP), hostPort);
                 socketState = new SocketStates()
                 {

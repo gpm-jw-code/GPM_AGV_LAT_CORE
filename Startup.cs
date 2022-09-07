@@ -21,13 +21,9 @@ namespace GPM_AGV_LAT_CORE
             await Task.Delay(1).ContinueWith(tsk =>
             {
                 Task.Run(() => EmulatorsManager.Start());
-                //TODO Read AGVS 
                 AGVS.AGVSManager.ConnectToHosts();
-                //TODO Read AGVC 
                 AGVC.AGVCManager.AGVCInfoBinding();
-
                 AGVC.AGVCManager.EventsRegist();
-
                 AGVC.AGVCManager.ConnectToAGVCs();
             });
         }

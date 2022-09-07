@@ -16,16 +16,16 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers
     public static class OrderManerger
     {
 
-        public static event EventHandler<clsHostOrder> OnNewOrderCreate;
+        public static event EventHandler<clsHostExecuting> OnNewOrderCreate;
 
-        public static List<clsHostOrder> OrderList { get; private set; } = new List<clsHostOrder>();
+        public static List<clsHostExecuting> OrderList { get; private set; } = new List<clsHostExecuting>();
 
         /// <summary>
         /// 加入一筆派車訂單
         /// </summary>
         /// <param name="newOrder"></param>
         /// <returns></returns>
-        internal static clsHostOrder NewOrderJoin(clsHostOrder newOrder)
+        internal static clsHostExecuting NewOrderJoin(clsHostExecuting newOrder)
         {
             newOrder.PropertyChanged += NewOrder_PropertyChanged;
             //定流水號
@@ -39,7 +39,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers
 
         private static void NewOrder_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            OnNewOrderCreate?.Invoke("OrderManerger", (clsHostOrder)sender);
+            OnNewOrderCreate?.Invoke("OrderManerger", (clsHostExecuting)sender);
         }
 
 

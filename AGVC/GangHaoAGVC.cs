@@ -22,8 +22,6 @@ namespace GPM_AGV_LAT_CORE.AGVC
 
         public cAGV AGVInterface { get; set; }
 
-        public new string EQName => string.Join("_", new object[] { agvcType.ToString(), Index.ToString("X3") });
-
         protected override bool ConnectoAGVInstance()
         {
             AGVInterface = new cAGV(agvcParameters.tcpParams.HostIP);

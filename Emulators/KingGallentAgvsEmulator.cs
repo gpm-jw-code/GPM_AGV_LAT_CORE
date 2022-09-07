@@ -71,7 +71,10 @@ namespace GPM_AGV_LAT_CORE.Emulators
                 returnData = helper.create0304MessaeData(0);
 
             }
+            else if (headerCode == "0306") //0305 AGVS Reset Command  的回覆
+            {
 
+            }
 
             if (returnData != null)
             {
@@ -87,8 +90,34 @@ namespace GPM_AGV_LAT_CORE.Emulators
         }
         public void TaskDownload(string SID, string EQName, string taskName)
         {
-            if (clients.Count == 0)
+            Socket client = FindColient(SID, EQName);
+            if (client == null)
+            {
                 return;
+            }
+            HandshakeRunningStatusReportHelper requestHelper = new HandshakeRunningStatusReportHelper(SID, EQName);
+            Send(client, requestHelper.CreateTaskDownload(taskName));
+
+        }
+
+        /// <summary>
+        /// 0305 當 AGVC 收到此 CMD 後，會依 Reset Mode 判斷是否為立即停下，停在點與點中間是可行的。若否，則待移動到 Node 上才停止。
+        /// </summary>
+        public void AGVSReset(string SID, string EQName, int ResetMode)
+        {
+            Socket client = FindColient(SID, EQName);
+            if (client == null)
+            {
+                return;
+            }
+            HandshakeRunningStatusReportHelper requestHelper = new HandshakeRunningStatusReportHelper(SID, EQName);
+            Send(client, requestHelper.CreateAGVSResetExcute(ResetMode));
+        }
+
+        private Socket FindColient(string SID, string EQName)
+        {
+            if (clients.Count == 0)
+                return null;
 
             string agvKey = SID + EQName;
             clients.TryGetValue(agvKey, out Socket client);
@@ -96,8 +125,11 @@ namespace GPM_AGV_LAT_CORE.Emulators
             {
                 client = clients.First().Value;
             }
-            HandshakeRunningStatusReportHelper requestHelper = new HandshakeRunningStatusReportHelper(SID, EQName);
-            client.Send(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(requestHelper.CreateTaskDownload(taskName)) + "*CR"));
+            return client;
+        }
+        private void Send(Socket client, Dictionary<string, object> data)
+        {
+            client.Send(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(data) + "*CR"));
         }
     }
 }

@@ -25,11 +25,24 @@ namespace GPM_AGV_LAT_CORE.AGVC
         public string ID { get; set; }
         public int Index { get; set; }
 
-        public string EQName => $"{agvcType}-{ID}";
+        virtual public string EQName
+        {
+            get
+            {
+                if (agvsBinding.agvsType == AGVS_TYPES.KINGGALLENT)
+                {
+                    return (agvcInfos as AgvcInfoForKingAllant).EQName;
+                }
+                else
+                {
+                    return $"{agvcType}-{ID}";
+                }
+            }
+        }
 
         public AGVC_TYPES agvcType { get; set; } = AGVC_TYPES.Unkown;
 
-        public List<clsHostOrder> orderList_LAT { get; set; } = new List<clsHostOrder>();
+        public List<clsHostExecuting> orderList_LAT { get; set; } = new List<clsHostExecuting>();
         public AGVCParameters agvcParameters { get; set; } = new AGVCParameters();
         public AGVCStateStore agvcStates { get; set; } = new AGVCStateStore();
         public IAgvcInfoToAgvs agvcInfos { get; set; }
@@ -137,7 +150,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
             throw new NotImplementedException();
         }
 
-        virtual public void AddHostOrder(clsHostOrder order)
+        virtual public void AddHostOrder(clsHostExecuting order)
         {
             orderList_LAT.Add(order);
             //模擬

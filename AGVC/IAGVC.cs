@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
 using GPM_AGV_LAT_CORE.AGVS;
+using GPM_AGV_LAT_CORE.GPMMiddleware;
 using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
 using GPM_AGV_LAT_CORE.LATSystem;
 using GPM_AGV_LAT_CORE.Parameters;
@@ -30,7 +31,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// <summary>
         /// 接受的派車任務清單(LAT內部)
         /// </summary>
-        List<clsHostOrder> orderList_LAT { get; set; }
+        List<clsHostExecuting> orderList_LAT { get; set; }
 
         /// <summary>
         /// AGVC 參數
@@ -71,7 +72,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        void AddHostOrder(clsHostOrder order);
+        void AddHostOrder(clsHostExecuting order);
 
         /// <summary>
         /// 

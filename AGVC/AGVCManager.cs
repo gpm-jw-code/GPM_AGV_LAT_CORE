@@ -17,7 +17,8 @@ namespace GPM_AGV_LAT_CORE.AGVC
         public static List<IAGVC> AGVCList = new List<IAGVC>()
         {
            new GangHaoAGVC() {ID="0001",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.233"} }},
-           new GPMAGVC() {ID="0002",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.111"} }},
+           new GangHaoAGVC() {ID="0002",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.111"} }},
+           new GangHaoAGVC() {ID="0003",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.112"} }},
         };
 
         /// <summary>
@@ -68,6 +69,11 @@ namespace GPM_AGV_LAT_CORE.AGVC
             }
             Console.WriteLine("綁定了 {0} 台車", bindedAgvcNum);
             return bindedAgvcNum;
+        }
+
+        internal static IAGVC FindAGVCInGPM()
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>

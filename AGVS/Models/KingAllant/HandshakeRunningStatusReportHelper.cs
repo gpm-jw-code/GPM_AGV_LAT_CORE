@@ -98,6 +98,8 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             return returnObj;
         }
 
+       
+
 
         /// <summary>
         /// 0101
@@ -168,6 +170,16 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             };
             return returnObj;
         }
-
+        internal Dictionary<string, object> CreateAGVSResetExcute(int resetMode)
+        {
+            returnObj["Header"] = new Dictionary<string, object>()
+            {
+                { "0305" , new Dictionary<string, object>(){
+                    {"Time stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss")},
+                    {"Reset Mode",resetMode},
+                } }
+            };
+            return returnObj;
+        }
     }
 }

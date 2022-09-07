@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using GPM_AGV_LAT_CORE.AGVC;
 using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
 using GPM_AGV_LAT_CORE.AGVS.Models.KingAllant;
+using GPM_AGV_LAT_CORE.GPMMiddleware;
 using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
 using GPM_AGV_LAT_CORE.Protocols.Tcp;
 using Newtonsoft.Json;
@@ -35,46 +37,72 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
             return SendMessageOut(JsonConvert.SerializeObject(agvcRunningStateData), true);
         }
 
-        public void TaskDownloadReport(string SID, string EQName, int returnCode)
+
+        public void TaskDownloadReport(IAGVC agvc, bool success)
         {
-            Dictionary<string, object> taskDownloadReply = new Dictionary<string, object>()
+            AgvcInfoForKingAllant agvcInfo = (AgvcInfoForKingAllant)agvc.agvcInfos;
+            Dictionary<string, object> taskDownloadReply = CreateModelBase(agvc);
+            taskDownloadReply["Header"] = new Dictionary<string, object>()
             {
-                { "SID",SID},
-                { "EQName",EQName},
-                { "System Bytes",302},
-                { "Header",new Dictionary<string, object>()
+                {"0302", new Dictionary<string, object>()
                 {
-                    {"0302", new Dictionary<string, object>()
-                        {
-                            { "Return Code",returnCode }
-                        }
-                    }
-                } }
+                    { "Return Code",success?0:400 }
+                }
+                }
             };
             SendMessageOut(JsonConvert.SerializeObject(taskDownloadReply), false);
+
+        }
+        public void ResetReport(IAGVC agvc, bool success)
+        {
+            Dictionary<string, object> taskDownloadReply = CreateModelBase(agvc);
+            taskDownloadReply["Header"] = new Dictionary<string, object>()
+            {
+                {"0306", new Dictionary<string, object>()
+                {
+                    { "Time Stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss") },
+                    { "Return Code",success?0:400 },
+                }
+                }
+            };
+            SendMessageOut(JsonConvert.SerializeObject(taskDownloadReply), false);
+
         }
 
-        public void TaskStateFeedback(clsHostOrder order)
+        public void TaskStateFeedback(clsHostExecuting order)
         {
             var agvcInfo = order.ExecuteingAGVC.agvcInfoForagvs as AgvcInfoForKingAllant;
-            Dictionary<string, object> taskDownloadReply = new Dictionary<string, object>()
+            Dictionary<string, object> taskDownloadReply = CreateModelBase(agvcInfo);
+            taskDownloadReply["Header"] = new Dictionary<string, object>()
             {
-                { "SID",agvcInfo.SID},
-                { "EQName",agvcInfo.EQName},
-                { "System Bytes",303},
-                { "Header",new Dictionary<string, object>()
-                {
-                    {"0303", new Dictionary<string, object>()
+                 {"0303", new Dictionary<string, object>()
                         {
                             { "Time Stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss") },
                             { "Task Name", order.latOrderDetail.taskName },
                             { "Task Status", GetTaskStatusFromLATState(order.State)},
                         }
                     }
-                } }
             };
             SendMessageOut(JsonConvert.SerializeObject(taskDownloadReply), true, out SocketStates states);
         }
+
+        private Dictionary<string, object> CreateModelBase(AgvcInfoForKingAllant agvcInfo)
+        {
+            Dictionary<string, object> taskDownloadReply = new Dictionary<string, object>()
+            {
+                { "SID",agvcInfo.SID},
+                { "EQName",agvcInfo.EQName},
+                { "System Bytes",302},
+                { "Header",new Dictionary<string, object>()}
+            };
+            return taskDownloadReply;
+        }
+        private Dictionary<string, object> CreateModelBase(IAGVC agvc)
+        {
+            AgvcInfoForKingAllant agvcInfo = (AgvcInfoForKingAllant)agvc.agvcInfos;
+            return CreateModelBase(agvcInfo);
+        }
+
 
         private int GetTaskStatusFromLATState(ORDER_STATE state)
         {
@@ -103,7 +131,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
             try
             {
                 SocketStates ret = socketClient.Send(Encoding.ASCII.GetBytes(json), waitReply);
-                return waitReply ? ret.receieveLen > 0 : true;//TODO 
+                return waitReply ? ret.receieveLen > 0 : true; //TODO 
             }
             catch (Exception ex)
             {
