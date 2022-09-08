@@ -2,6 +2,7 @@
 using GPM_AGV_LAT_CORE.AGVC.AGVCStates;
 using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
 using GPM_AGV_LAT_CORE.LATSystem;
+using GPM_AGV_LAT_CORE.Logger;
 using GPM_AGV_LAT_CORE.Parameters;
 using System;
 using System.Collections.Generic;
@@ -18,6 +19,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
         public GPMAGVC()
         {
             agvcType = AGVC_TYPES.GPM;
+            logger = new LoggerInstance(GetType());
         }
 
         protected override bool ConnectoAGVInstance()

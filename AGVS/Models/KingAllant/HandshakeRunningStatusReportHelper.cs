@@ -1,4 +1,5 @@
-﻿using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
+﻿using GPM_AGV_LAT_CORE.AGVC;
+using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -66,6 +67,18 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             return returnObj;
         }
 
+
+
+        internal Dictionary<string, object> CreateStateReportDataModel(AGVCStateStore agvcStates)
+        {
+            return CreateStateReportDataModel(new RunningStateReportModel()
+            {
+                RamUsagePercent = 69.3,
+                AGVStatus = (int)agvcStates.States.ERunningState
+            });
+        }
+
+
         /// <summary>
         /// 建立一個模板 Caller去塞值
         /// </summary>
@@ -98,14 +111,21 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             return returnObj;
         }
 
-       
-
 
         /// <summary>
         /// 0101
         /// </summary>
         /// <returns></returns>
-        public Dictionary<string, object> CreateOnlineOfflineModeQuery()
+        public string CreateOnlineOfflineModeQueryModelJson()
+        {
+            return JsonConvert.SerializeObject(CreateOnlineOfflineModeQueryModel());
+        }
+
+        /// <summary>
+        /// 0101
+        /// </summary>
+        /// <returns></returns>
+        public Dictionary<string, object> CreateOnlineOfflineModeQueryModel()
         {
             returnObj["Header"] = new Dictionary<string, object>()
             {
@@ -170,6 +190,9 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             };
             return returnObj;
         }
+
+
+
         internal Dictionary<string, object> CreateAGVSResetExcute(int resetMode)
         {
             returnObj["Header"] = new Dictionary<string, object>()

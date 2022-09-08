@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using GPM_AGV_LAT_CORE.Logger;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +14,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
         public string Jsonstr { get; set; }
         private Dictionary<string, object> _remoteObj;
         private Dictionary<string, object> returnObj;
+        ILogger logger = new LoggerInstance(typeof(HandshakeResponseDataHelper));
         public Dictionary<string, object> remoteObj
         {
             get => _remoteObj;
@@ -34,16 +36,25 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
         {
             remoteObj = remoteTaskObj;
         }
+
         public HandshakeResponseDataHelper(string remoteASCIIRev)
         {
             try
             {
-
                 Jsonstr = remoteASCIIRev.Replace("*CR", "");
-                remoteObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(Jsonstr);
+                try
+                {
+                    remoteObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(Jsonstr);
+                }
+                catch (JsonSerializationException ex)
+                {
+                    logger.ErrorLog("HandshakeResponseDataHelper ||JsonSerializationException|| in construtor", ex);
+                    remoteObj = null;
+                }
             }
             catch (Exception ex)
             {
+                logger.ErrorLog("HandshakeResponseDataHelper Error occur in construtor", ex);
             }
         }
 

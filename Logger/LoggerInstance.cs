@@ -16,39 +16,51 @@ namespace GPM_AGV_LAT_CORE.Logger
 
         }
 
-        public void ErrorLog(Exception ex, string message)
+        public void ErrorLog(string message, Exception ex)
         {
-            throw new NotImplementedException();
+            Console.ForegroundColor = ConsoleColor.Red;
+            ConsoleWriteLine("Error", ex.StackTrace + $":{message}");
         }
 
         public void ErrorLog(Exception ex)
         {
-            throw new NotImplementedException();
+            Console.ForegroundColor = ConsoleColor.Red;
+            ConsoleWriteLine("Error", ex.Message);
         }
 
-        public void FatalLog(Exception ex, string message)
+        public void FatalLog(string message, Exception ex)
         {
-            throw new NotImplementedException();
+            Console.ForegroundColor = ConsoleColor.Red;
+            ConsoleWriteLine("Fatal", ex.StackTrace + $":{message}");
         }
 
         public void FatalLog(Exception ex)
         {
-            throw new NotImplementedException();
+            Console.ForegroundColor = ConsoleColor.Red;
+            ConsoleWriteLine("Fatal", ex.Message);
         }
 
         public void InfoLog(string message)
         {
-            throw new NotImplementedException();
+            Console.ForegroundColor = ConsoleColor.Green;
+            ConsoleWriteLine("Info", message);
         }
 
         public void TraceLog(string message)
         {
-            throw new NotImplementedException();
+            Console.ForegroundColor = ConsoleColor.White;
+            ConsoleWriteLine("Trace", message);
         }
 
         public void WarnLog(string message)
         {
-            throw new NotImplementedException();
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            ConsoleWriteLine("Warn", message);
+        }
+
+        private void ConsoleWriteLine(string classify, object message)
+        {
+            Console.WriteLine("{0} | {1} | {2} |: {3}", DateTime.Now.ToString(), className, classify, message);
         }
     }
 }

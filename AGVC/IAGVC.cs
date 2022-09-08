@@ -4,10 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
+using GPM_AGV_LAT_CORE.AGVC.AGVCStates;
 using GPM_AGV_LAT_CORE.AGVS;
 using GPM_AGV_LAT_CORE.GPMMiddleware;
 using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
 using GPM_AGV_LAT_CORE.LATSystem;
+using GPM_AGV_LAT_CORE.Logger;
 using GPM_AGV_LAT_CORE.Parameters;
 
 namespace GPM_AGV_LAT_CORE.AGVC
@@ -29,6 +31,10 @@ namespace GPM_AGV_LAT_CORE.AGVC
         IAGVS agvsBinding { get; set; }
 
         /// <summary>
+        /// log物件
+        /// </summary>
+        ILogger logger { get; set; }
+        /// <summary>
         /// 接受的派車任務清單(LAT內部)
         /// </summary>
         List<clsHostExecuting> orderList_LAT { get; set; }
@@ -47,6 +53,14 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// AGVC在指定AGVS上的資訊
         /// </summary>
         IAgvcInfoToAgvs agvcInfos { get; set; }
+
+
+        /// <summary>
+        /// 車輛狀態變化
+        /// </summary>
+        event EventHandler<AGVCStateStore> StateOnChanged;
+        event EventHandler OrderStateOnChnaged;
+        event EventHandler<IAGVC> CheckOnlineStateFromAGVSRequest;
 
         /// <summary>
         /// 與AGV車連線
@@ -80,12 +94,6 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// <param name="sender"></param>
         /// <param name="e"></param>
         void AGVCDataConvertToLATFormat(object agvcData);
-
-        /// <summary>
-        /// 車輛狀態變化
-        /// </summary>
-        event EventHandler<AGVCStateStore> StateOnChanged;
-        event EventHandler OrderStateOnChnaged;
 
     }
 }

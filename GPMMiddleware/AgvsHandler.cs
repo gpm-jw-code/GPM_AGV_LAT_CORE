@@ -25,12 +25,12 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="taskObject"></param>
-        internal static async void KingGellantAGVSTaskDownloadHandle(object sender, object taskObject)
+        internal static async void KingGellantAGVSTaskDownloadHandle(object sender, IAGVSExecutingState executingState)
         {
             IAGVS agvs = (KingGallentAGVS)sender;
             IAgvsExcutingPreProcessor processor = new KingGallentExcutingPreProcessor();
-            clsHostExecuting newOrder = processor.Run(agvs, taskObject);
-            ExecutingTransferWorkFlow(agvs, processor.agvcFound, newOrder);
+            clsHostExecuting newOrder = processor.Run(agvs, executingState);
+            ExecutingTransferWorkFlow(agvs, processor.agvcFound, newOrder, executingState);
         }
 
         /// <summary>
@@ -38,12 +38,12 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="taskObject"></param>
-        internal static void GPMAGVSTaskDownloadHandle(object sender, object taskObject)
+        internal static void GPMAGVSTaskDownloadHandle(object sender, IAGVSExecutingState executingState)
         {
             IAGVS agvs = (IAGVS)sender;
             IAgvsExcutingPreProcessor processor = new GpmExcutingPreProcessor();
-            clsHostExecuting newExecuting = processor.Run(agvs, taskObject);
-            ExecutingTransferWorkFlow(agvs, processor.agvcFound, newExecuting);
+            clsHostExecuting newExecuting = processor.Run(agvs, executingState);
+            ExecutingTransferWorkFlow(agvs, processor.agvcFound, newExecuting, executingState);
         }
 
 
@@ -53,7 +53,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
         /// <param name="agvs"></param>
         /// <param name="agvc"></param>
         /// <param name="newExecuting"></param>
-        private static async void ExecutingTransferWorkFlow(IAGVS agvs, IAGVC agvc, clsHostExecuting newExecuting)
+        private static async void ExecutingTransferWorkFlow(IAGVS agvs, IAGVC agvc, clsHostExecuting newExecuting, IAGVSExecutingState executingState)
         {
             var executeType = newExecuting.EExecuteType;
             if (executeType == EXECUTE_TYPE.Order)
@@ -62,7 +62,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                 newExecuting.PropertyChanged += (order, e) => TaskStateFeedBack(agvs, order as clsHostExecuting);
             }
             bool setOrderSuccess = await TransferExecutingToAGVC(agvc, newExecuting);
-            ExecutingResultReport(agvs, agvc, executeType, setOrderSuccess);
+            ExecutingResultReport(agvs, agvc, executeType, setOrderSuccess, executingState);
         }
 
 
@@ -73,12 +73,12 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
         /// <param name="agvc"></param>
         /// <param name="executeType"></param>
         /// <param name="setOrderSuccess"></param>
-        private static void ExecutingResultReport(IAGVS agvs, IAGVC agvc, EXECUTE_TYPE executeType, bool setOrderSuccess)
+        private static void ExecutingResultReport(IAGVS agvs, IAGVC agvc, EXECUTE_TYPE executeType, bool setOrderSuccess, IAGVSExecutingState executingState)
         {
             if (executeType == EXECUTE_TYPE.Order)
-                agvs.agvsApi.TaskDownloadReport(agvc, setOrderSuccess);
+                agvs.agvsApi.TaskDownloadReport(agvc, setOrderSuccess, executingState);
             else if (executeType == EXECUTE_TYPE.Reset)
-                agvs.agvsApi.ResetReport(agvc, setOrderSuccess);
+                agvs.agvsApi.ResetReport(agvc, setOrderSuccess, executingState);
         }
 
 

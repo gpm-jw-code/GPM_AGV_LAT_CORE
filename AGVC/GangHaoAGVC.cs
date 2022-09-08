@@ -7,6 +7,7 @@ using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
 using System.Linq;
 using System.Collections.Generic;
 using GangHaoAGV.API;
+using GPM_AGV_LAT_CORE.Logger;
 
 namespace GPM_AGV_LAT_CORE.AGVC
 {
@@ -18,6 +19,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
         public GangHaoAGVC()
         {
             agvcType = AGVC_TYPES.GangHau;
+            logger = new LoggerInstance(GetType());
         }
 
         public cAGV AGVInterface { get; set; }
@@ -34,7 +36,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
             {
                 agvcStates.States.EConnectionState = CONNECTION_STATE.CONNECTING;
                 await Task.Delay(TimeSpan.FromSeconds(1));
-                Console.WriteLine("等待罡豪State Port 連線...");
+                logger.TraceLog("等待罡豪State Port 連線...");
             }
 
             agvcStates.States.EConnectionState = CONNECTION_STATE.CONNECTED;

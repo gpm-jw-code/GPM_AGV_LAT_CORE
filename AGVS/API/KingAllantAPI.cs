@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using GPM_AGV_LAT_CORE.AGVC;
 using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
+using GPM_AGV_LAT_CORE.AGVC.AGVCStates;
 using GPM_AGV_LAT_CORE.AGVS.Models.KingAllant;
 using GPM_AGV_LAT_CORE.GPMMiddleware;
 using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
@@ -13,8 +14,10 @@ using Newtonsoft.Json;
 
 namespace GPM_AGV_LAT_CORE.AGVS.API
 {
-    public class KingAllantAPI : IAgvsApi
+    public class KingAllantAPI : IAgvsHandShakeable
     {
+
+
         public readonly TcpSocketClient socketClient;
 
         public KingAllantAPI(TcpSocketClient socketClient)
@@ -28,17 +31,18 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
             {
                 HandshakeRunningStatusReportHelper request = new HandshakeRunningStatusReportHelper($"00{no}:001:001", $"AGV_00{no}");
                 var json = JsonConvert.SerializeObject(request.CreateOnlineOfflineRequest(1, no * 1000));
-                SendMessageOut(json, true);
+                ReportRequestMessageSendOut(json, out SocketStates states);
             }
         }
 
         public bool RunningStatusReport(Dictionary<string, object> agvcRunningStateData)
         {
-            return SendMessageOut(JsonConvert.SerializeObject(agvcRunningStateData), true);
+            ReportRequestMessageSendOut(JsonConvert.SerializeObject(agvcRunningStateData), out SocketStates states);
+            return states.receieveLen != 0;
         }
 
 
-        public void TaskDownloadReport(IAGVC agvc, bool success)
+        public void TaskDownloadReport(IAGVC agvc, bool success, IAGVSExecutingState executingState)
         {
             AgvcInfoForKingAllant agvcInfo = (AgvcInfoForKingAllant)agvc.agvcInfos;
             Dictionary<string, object> taskDownloadReply = CreateModelBase(agvc);
@@ -50,10 +54,9 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
                 }
                 }
             };
-            SendMessageOut(JsonConvert.SerializeObject(taskDownloadReply), false);
-
+            AckMessageSendOut(JsonConvert.SerializeObject(taskDownloadReply));
         }
-        public void ResetReport(IAGVC agvc, bool success)
+        public void ResetReport(IAGVC agvc, bool success, IAGVSExecutingState executingState)
         {
             Dictionary<string, object> taskDownloadReply = CreateModelBase(agvc);
             taskDownloadReply["Header"] = new Dictionary<string, object>()
@@ -65,7 +68,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
                 }
                 }
             };
-            SendMessageOut(JsonConvert.SerializeObject(taskDownloadReply), false);
+            AckMessageSendOut(JsonConvert.SerializeObject(taskDownloadReply));
 
         }
 
@@ -83,7 +86,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
                         }
                     }
             };
-            SendMessageOut(JsonConvert.SerializeObject(taskDownloadReply), true, out SocketStates states);
+            ReportRequestMessageSendOut(JsonConvert.SerializeObject(taskDownloadReply), out SocketStates states);
         }
 
         private Dictionary<string, object> CreateModelBase(AgvcInfoForKingAllant agvcInfo)
@@ -125,13 +128,13 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
             }
         }
 
-        private bool SendMessageOut(string requestJson, bool waitReply)
+        private bool AckMessageSendOut(string json)
         {
-            string json = requestJson + "*CR";
+            json = json + "*CR";
             try
             {
-                SocketStates ret = socketClient.Send(Encoding.ASCII.GetBytes(json), waitReply);
-                return waitReply ? ret.receieveLen > 0 : true; //TODO 
+                SocketStates ret = socketClient.Send(Encoding.ASCII.GetBytes(json), false);
+                return true;
             }
             catch (Exception ex)
             {
@@ -140,11 +143,32 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
             }
         }
 
-        private bool SendMessageOut(string requestJson, bool waitReply, out SocketStates states)
+        private bool ReportRequestMessageSendOut(string requestJson, out SocketStates states)
         {
             string json = requestJson + "*CR";
-            states = socketClient.Send(Encoding.ASCII.GetBytes(json), waitReply);
+            states = socketClient.Send(Encoding.ASCII.GetBytes(json), true);
             return states.receieveLen > 0;
+        }
+
+        public ONLINE_STATE DownloadAgvcOnlineState(IAGVC agvc)
+        {
+            //先報一次0105
+            HandshakeRunningStatusReportHelper stateReport = new HandshakeRunningStatusReportHelper(agvc.agvcInfos as AgvcInfoForKingAllant);
+            var stateReportObj = stateReport.CreateStateReportDataModel(agvc.agvcStates);
+
+            RunningStatusReport(stateReportObj);
+            var onlineModeQueryModelJson = stateReport.CreateOnlineOfflineModeQueryModelJson();
+            ReportRequestMessageSendOut(onlineModeQueryModelJson, out SocketStates states);
+            if (states.ASCIIRev.Contains("*CR"))
+            {
+                string jsonStr = states.ASCIIRev.Replace("*CR", "");
+                Dictionary<string, object> revObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonStr);
+                var headerdata = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string,object>>>(revObj["Header"].ToString());
+                return headerdata["0102"]["Remote Mode"].ToString() == "1" ? ONLINE_STATE.ONLINE : ONLINE_STATE.OFFLINE;
+            }
+            else
+                return ONLINE_STATE.Unknown;
+
         }
     }
 }

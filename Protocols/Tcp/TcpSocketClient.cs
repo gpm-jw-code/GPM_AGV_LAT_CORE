@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using GPM_AGV_LAT_CORE.Logger;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,8 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
 {
     public class TcpSocketClient
     {
-        protected TcpClient tcpClient { get; set; }
+        public ILogger logger;
+        public TcpClient tcpClient { get; set; }
         public string hostIP { get; }
         public int hostPort { get; }
 
@@ -20,17 +22,15 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
         public event EventHandler<SocketStates> OnMessageReceive;
 
         public SocketStates socketState { get; set; } = new SocketStates(8192);
-
+        public TcpSocketClient()
+        {
+            logger = new LoggerInstance(GetType());
+        }
         public TcpSocketClient(string hostIP, int hostPort)
         {
+            logger = new LoggerInstance(GetType());
             this.hostIP = hostIP;
             this.hostPort = hostPort;
-        }
-        public TcpSocketClient(string hostIP, int hostPort, SocketStates states)
-        {
-            this.hostIP = hostIP;
-            this.hostPort = hostPort;
-            this.socketState = states;
         }
 
         internal bool Connect()
@@ -40,6 +40,8 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
                 tcpClient = new TcpClient();
                 tcpClient.Connect(hostIP, hostPort);
                 socketState.socket = tcpClient.Client;
+                tcpClient.Client.BeginReceive(socketState.buffer, 0, socketState.bufferSize, SocketFlags.None, new AsyncCallback(ReceieveCallBack), socketState);
+
                 return true;
             }
             catch (Exception ex)

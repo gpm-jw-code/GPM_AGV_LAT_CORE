@@ -22,6 +22,12 @@ namespace GPM_AGV_LAT_CORE.Emulators
             LocationYInitial = new Random().Next(100, 700);
         }
 
+        public override void Start()
+        {
+            server.OnMessageReceive += Server_OnClientMessageRev;
+            server.OnClientConnected += Server_OnClientConnected;
+            server.Listen();
+        }
 
         public override void Server_OnClientMessageRev(object sender, SocketStates _SocketStates)
         {

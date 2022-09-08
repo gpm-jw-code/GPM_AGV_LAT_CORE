@@ -17,10 +17,8 @@ namespace GPM_AGV_LAT_CORE.AGVC
     {
         public AGVCBase()
         {
-            logger = new LoggerInstance(GetType());
         }
 
-        private ILogger logger;
 
         public string ID { get; set; }
         public int Index { get; set; }
@@ -55,10 +53,16 @@ namespace GPM_AGV_LAT_CORE.AGVC
             }
         }
 
+        public ILogger logger { get; set; }
+
         public event EventHandler OrderStateOnChnaged;
         public event EventHandler<AGVCStateStore> StateOnChanged;
+        public event EventHandler<IAGVC> CheckOnlineStateFromAGVSRequest;
 
-        protected void StateChangedDelagate()
+        /// <summary>
+        /// 狀態變化事件委派
+        /// </summary>
+        virtual protected void StateChangedDelagate()
         {
             StateOnChanged?.Invoke(this, agvcStates);
         }
@@ -68,6 +72,8 @@ namespace GPM_AGV_LAT_CORE.AGVC
         {
             agvcStates.States.EConnectionState = CONNECTION_STATE.CONNECTING;
             bool connected = ConnectoAGVInstance();
+            if (connected)
+                CheckOnlineStateFromAGVSRequest?.Invoke(this, this);
             agvcStates.States.EConnectionState = connected ? CONNECTION_STATE.CONNECTED : CONNECTION_STATE.DISCONNECT;
             return connected;
         }
@@ -87,11 +93,11 @@ namespace GPM_AGV_LAT_CORE.AGVC
                 {
                     await SyncStateInstance();
                     StateChangedDelagate();
-                    WriteLog(" 車體狀態完成同步");
+                    //logger.InfoLog("車體狀態完成同步");
                 }
                 catch (Exception ex)
                 {
-                    WriteErrorLog("SyncState", ex.Message, ConsoleColor.Red);
+                    //logger.ErrorLog(ex);
                 }
             }
         }
@@ -103,11 +109,11 @@ namespace GPM_AGV_LAT_CORE.AGVC
                 try
                 {
                     await SyncOrderStateInstance();
-                    WriteLog(" 訂單狀態完成同步");
+                    //logger.InfoLog("車體狀態完成同步");
                 }
                 catch (Exception ex)
                 {
-                    WriteErrorLog("SyncOrdersState", ex.Message, ConsoleColor.Red);
+                    //logger.ErrorLog(ex);
                 }
             }
         }
@@ -120,11 +126,11 @@ namespace GPM_AGV_LAT_CORE.AGVC
                 try
                 {
                     await SyncSyncOrderExecuteStateInstance();
-                    WriteLog(" 訂單執行狀態完成同步");
+                    //logger.InfoLog("訂單執行狀態完成同步");
                 }
                 catch (Exception ex)
                 {
-                    WriteErrorLog("SyncSyncOrderExecuteState", ex.Message, ConsoleColor.Red);
+                    logger.WarnLog(ex.Message);
                 }
             }
         }
@@ -166,23 +172,6 @@ namespace GPM_AGV_LAT_CORE.AGVC
         {
         }
 
-        /// <summary>
-        /// 寫LOG
-        /// </summary>
-        /// <param name="message"></param>
-        protected void WriteLog(string message)
-        {
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"{DateTime.Now} |AGVC-{GetType().Name}({EQName})| {message}");
-        }
-        /// <summary>
-        /// 寫LOG
-        /// </summary>
-        /// <param name="message"></param>
-        protected void WriteErrorLog(string method, string message, ConsoleColor color = ConsoleColor.DarkYellow)
-        {
-            Console.ForegroundColor = color;
-            Console.WriteLine($"{DateTime.Now} |AGVC-{GetType().Name}|{method}| {message}");
-        }
+
     }
 }

@@ -130,10 +130,10 @@
     <Compile Include="AGVC\Order\GangHaoAGVCOrder.cs" />
     <Compile Include="AGVC\Order\IAGVCOrder.cs" />
     <Compile Include="AGVS\AGVSManager.cs" />
-    <Compile Include="AGVS\API\IAgvsApi.cs" />
+    <Compile Include="AGVS\API\IAgvsHandShakeable.cs" />
     <Compile Include="AGVS\API\KingAllantAPI.cs" />
-    <Compile Include="AGVS\API\KingAllantSocketStates.cs" />
     <Compile Include="AGVS\IAGVS.cs" />
+    <Compile Include="AGVS\IAGVSExecutingState.cs" />
     <Compile Include="AGVS\KingGallentAGVS.cs" />
     <Compile Include="AGVS\Models\KingAllant\clsCmdBase.cs" />
     <Compile Include="AGVS\Models\KingAllant\HandshakeRunningStatusReportHelper.cs" />

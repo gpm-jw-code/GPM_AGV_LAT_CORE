@@ -18,13 +18,15 @@ namespace GPM_AGV_LAT_CORE.AGVC.AGVCStates
 
     public enum ONLINE_STATE
     {
-        ONLINE, OFFLINE
+        ONLINE, OFFLINE, Unknown
     }
 
     public enum CONNECTION_STATE
     {
         CONNECTED, CONNECTING, DISCONNECT
     }
+
+
     /// <summary>
     /// 
     /// </summary>

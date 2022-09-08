@@ -47,7 +47,7 @@ namespace GPM_AGV_LAT_CORE.AGVS
         /// <summary>
         /// 跟派車系統交握的API介面
         /// </summary>
-        IAgvsApi agvsApi { get; set; }
+        IAgvsHandShakeable agvsApi { get; set; }
 
         /// <summary>
         /// 需要上系統的AGV車輛參數組
@@ -82,7 +82,7 @@ namespace GPM_AGV_LAT_CORE.AGVS
         /// <summary> 
         /// 收到派車系統 Task Execute事件
         /// </summary>
-        event EventHandler<object> OnTaskDownloadRecieved;
+        event EventHandler<IAGVSExecutingState> OnTaskDownloadRecieved;
 
         #endregion
 

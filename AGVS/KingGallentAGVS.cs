@@ -3,6 +3,7 @@ using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
 using GPM_AGV_LAT_CORE.AGVS.API;
 using GPM_AGV_LAT_CORE.AGVS.Models.KingAllant;
 using GPM_AGV_LAT_CORE.LATSystem;
+using GPM_AGV_LAT_CORE.Logger;
 using GPM_AGV_LAT_CORE.Parameters;
 using GPM_AGV_LAT_CORE.Protocols.Tcp;
 using Newtonsoft.Json;
@@ -23,20 +24,25 @@ namespace GPM_AGV_LAT_CORE.AGVS
         public AGVS_TYPES agvsType { get; set; } = AGVS_TYPES.KINGGALLENT;
         public AGVSParameters agvsParameters { get; set; } = new AGVSParameters();
         public bool connected { get; set; }
+        /// <summary>
+        ///  
+        /// </summary>
         public TcpSocketClient tcpSocketClient { get; private set; }
+
         public List<IAGVC> RegistedAgvcList { get; set; } = new List<IAGVC>();
-        public IAgvsApi agvsApi { get; set; }
+        public IAgvsHandShakeable agvsApi { get; set; }
         public KingAllantAPI _agvsApi => (KingAllantAPI)agvsApi;
 
         public List<IAgvcInfoToAgvs> BindingAGVCInfoList { get; set; } = null;
         public string VenderName { get; set; } = "晶捷能";
-
+        private ILogger logger;
         public KingGallentAGVS()
         {
+            logger = new LoggerInstance(GetType());
         }
 
         public event EventHandler<object> OnHostMessageReceived;
-        public event EventHandler<object> OnTaskDownloadRecieved;
+        public event EventHandler<IAGVSExecutingState> OnTaskDownloadRecieved;
 
         /// <summary>
         /// 把自己當成一部車連接到晶捷能派車平台
@@ -44,11 +50,19 @@ namespace GPM_AGV_LAT_CORE.AGVS
         /// <returns></returns>
         public bool ConnectToHost(out string err_msg)
         {
-            err_msg = "";
+            return ClientSideConnect(out err_msg);
+        }
+
+        /// <summary>
+        /// AGVC->AGVS Socket Interface
+        /// </summary>
+        /// <param name="err_msg"></param>
+        /// <returns></returns>
+        private bool ClientSideConnect(out string err_msg)
+        {
             try
             {
-                //TODO實作 晶捷能 => TCP Socket
-                tcpSocketClient = new TcpSocketClient(agvsParameters.tcpParams.HostIP, agvsParameters.tcpParams.HostPort, new KingAllantSocketStates());
+                tcpSocketClient = new TcpSocketClient(agvsParameters.tcpParams.HostIP, agvsParameters.tcpParams.HostPort);
                 tcpSocketClient.OnMessageReceive += TcpSocketClient_OnMessageReceive;
                 connected = tcpSocketClient.Connect(out err_msg);
                 agvsApi = new KingAllantAPI(tcpSocketClient);
@@ -65,21 +79,32 @@ namespace GPM_AGV_LAT_CORE.AGVS
         {
             try
             {
-                KingAllantSocketStates state = (KingAllantSocketStates)_SocketStates;
-                var revObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(state.JSONCmd);
-                OnHostMessageReceived?.Invoke(this, revObj);
-                var headerdata = JsonConvert.DeserializeObject<Dictionary<string, object>>(revObj["Header"].ToString());
-
-                if (headerdata.ContainsKey("0301") | headerdata.ContainsKey("0305"))
-                    OnTaskDownloadRecieved?.Invoke(this, revObj);
-                else
+                string[] splitedAry = _SocketStates.ASCIIRev.Replace("*CR", ";").Split(';');
+                foreach (var jsonStr in splitedAry)
                 {
+                    if (jsonStr == "" | jsonStr == null)
+                        continue;
+                    Dictionary<string, object> revObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonStr);
+                    var headerdata = JsonConvert.DeserializeObject<Dictionary<string, object>>(revObj["Header"].ToString());
+                    OnHostMessageReceived?.Invoke(this, revObj);
+
+                    if (headerdata.ContainsKey("0301") | headerdata.ContainsKey("0305"))
+                    {
+                        logger.WarnLog($"AGVS Task Down..{jsonStr}");
+                        OnTaskDownloadRecieved?.Invoke(this, new clsHostExcutingState(_SocketStates, revObj));
+                    }
+                    else
+                    {
+                        logger.InfoLog($"AGVS Acknowleage : {jsonStr}");
+                    }
 
                 }
+
+
             }
             catch (Exception ex)
             {
-
+                logger.FatalLog($"TcpSocketClient_OnMessageReceive:{ex.Message}", ex);
             }
         }
 
@@ -92,5 +117,24 @@ namespace GPM_AGV_LAT_CORE.AGVS
             });
             return _agvsApi.RunningStatusReport(reportObj);
         }
+
+
+        public class clsHostExcutingState : IAGVSExecutingState
+        {
+            public TcpSocketClient socketClient { get; private set; }
+            public dynamic executingObject { get; set; }
+            public clsHostExcutingState(SocketStates socketState, Dictionary<string, object> executingObject)
+            {
+                this.socketClient = new TcpSocketClient();
+                this.socketClient.tcpClient = new System.Net.Sockets.TcpClient();
+                socketClient.tcpClient.Client = socketState.socket;
+                socketClient.socketState = socketState;
+
+                this.executingObject = executingObject;
+
+            }
+        }
     }
+
+
 }

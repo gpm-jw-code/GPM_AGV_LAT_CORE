@@ -23,6 +23,8 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
 
     interface IAgvsExcutingPreProcessor
     {
+        IAGVSExecutingState aGVSExecutingState { get; set; }
+        dynamic taskDownloadObject { get; set; }
         EXECUTE_TYPE EExecuteType { get; set; }
         IAGVC agvcFound { get; set; }
         IAGVC FindAGV();
@@ -32,7 +34,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
         /// </summary>
         /// <returns></returns>
         EXECUTE_TYPE JudgeExecutingType();
-        clsHostExecuting Run(IAGVS agvs, object OrderObjectFromAgvs);
+        clsHostExecuting Run(IAGVS agvs, IAGVSExecutingState OrderObjectFromAgvs);
     }
 
 
@@ -40,11 +42,11 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
     internal class AgvsExcutingPreProcessorBase : IAgvsExcutingPreProcessor
     {
 
-
-        protected object OrderObjectFromAgvs;
+        public IAGVSExecutingState aGVSExecutingState { get; set; }
 
         public IAGVC agvcFound { get; set; }
         public EXECUTE_TYPE EExecuteType { get; set; }
+        public dynamic taskDownloadObject { get; set; }
 
         virtual public clsLATOrderDetail OrderConvertToLATFormat()
         {
@@ -61,13 +63,12 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
             throw new NotImplementedException();
         }
 
-        virtual public clsHostExecuting Run(IAGVS agvs, object OrderObjectFromAgvs)
+        virtual public clsHostExecuting Run(IAGVS agvs, IAGVSExecutingState aGVSExecutingState)
         {
-            this.OrderObjectFromAgvs = OrderObjectFromAgvs;
+            this.aGVSExecutingState = aGVSExecutingState;
             EExecuteType = JudgeExecutingType();
             agvcFound = FindAGV();
-
-            clsHostExecuting newExecuting = new clsHostExecuting(agvs, agvcFound, OrderObjectFromAgvs, EExecuteType)
+            clsHostExecuting newExecuting = new clsHostExecuting(agvs, agvcFound, taskDownloadObject, EExecuteType)
             {
                 RecieveTimeStamp = DateTime.Now,
                 State = ORDER_STATE.WAIT_EXECUTE,
@@ -79,7 +80,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
                 newExecuting.latOrderDetail = latOrder;
             }
 
-            Console.WriteLine("AGV TaskDownload From {0} to {1} |Task Content: {2}", agvs.agvsType, agvcFound == null ? "No-Car-Match" : agvcFound.GetType().Name, JsonConvert.SerializeObject(OrderObjectFromAgvs));
+            Console.WriteLine("AGV TaskDownload From {0} to {1} |Task Content: {2}", agvs.agvsType, agvcFound == null ? "No-Car-Match" : agvcFound.GetType().Name, JsonConvert.SerializeObject(aGVSExecutingState.executingObject));
             return newExecuting;
         }
     }
@@ -90,7 +91,6 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
         Dictionary<string, Dictionary<string, object>> _headerData;
         public override EXECUTE_TYPE JudgeExecutingType()
         {
-
             if (_headerData.ContainsKey("0301"))
                 return EXECUTE_TYPE.Order;
             else if (_headerData.ContainsKey("0305"))
@@ -100,6 +100,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
         }
         public override clsLATOrderDetail OrderConvertToLATFormat()
         {
+            this.taskDownloadObject = _taskObj;
             return OrderConverter.AGVSToLAT.KingGallentOrderToLATOrder(_taskObj);
         }
 
@@ -111,9 +112,10 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
             return agvc;
         }
 
-        public override clsHostExecuting Run(IAGVS agvs, object OrderObjectFromAgvs)
+        public override clsHostExecuting Run(IAGVS agvs, IAGVSExecutingState OrderObjectFromAgvs)
         {
-            _taskObj = (Dictionary<string, object>)OrderObjectFromAgvs;
+            KingGallentAGVS.clsHostExcutingState excutingState = (KingGallentAGVS.clsHostExcutingState)OrderObjectFromAgvs;
+            _taskObj = excutingState.executingObject;
             _headerData = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(_taskObj["Header"].ToString());
 
             return base.Run(agvs, OrderObjectFromAgvs);
@@ -127,7 +129,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
         }
         public override clsLATOrderDetail OrderConvertToLATFormat()
         {
-            return OrderConverter.AGVSToLAT.GPMOrderToLATOrder(OrderObjectFromAgvs);
+            return OrderConverter.AGVSToLAT.GPMOrderToLATOrder(aGVSExecutingState);
         }
     }
 }

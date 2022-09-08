@@ -11,9 +11,9 @@ namespace GPM_AGV_LAT_CORE.Logger
         void TraceLog(string message);
         void InfoLog(string message);
         void WarnLog(string message);
-        void ErrorLog(Exception ex, string message);
+        void ErrorLog(string message, Exception ex);
         void ErrorLog(Exception ex);
-        void FatalLog(Exception ex, string message);
+        void FatalLog(string message, Exception ex);
         void FatalLog(Exception ex);
     }
 }

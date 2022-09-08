@@ -9,7 +9,9 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
 {
     internal partial class AgvsHandler
     {
-
+        /// <summary>
+        /// AGVS->LAT->AGVC 訂單轉換
+        /// </summary>
         internal struct OrderConverter
         {
             /// <summary>

@@ -2,6 +2,7 @@
 using GPM_AGV_LAT_CORE.AGVS;
 using GPM_AGV_LAT_CORE.AGVS.API;
 using GPM_AGV_LAT_CORE.LATSystem;
+using GPM_AGV_LAT_CORE.Logger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
     /// </summary>
     public static class AgvcHandler
     {
+        static ILogger logger = new LoggerInstance(typeof(AgvcHandler));
         /// <summary>
         /// 
         /// </summary>
@@ -33,7 +35,11 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
 
         }
 
-
-
+        internal static void CheckOnlineStateHandler(object sender, IAGVC agvc)
+        {
+            var onlineState = agvc.agvsBinding.agvsApi.DownloadAgvcOnlineState(agvc);
+            logger.InfoLog($"agvc-{agvc.EQName} online State download result : {onlineState}");
+            agvc.agvcStates.States.EOnlineState = onlineState;
+        }
     }
 }

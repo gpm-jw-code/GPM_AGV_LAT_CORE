@@ -38,6 +38,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
             {
                 agvc.StateOnChanged += AgvcHandler.StateOnChangedHandler;
                 agvc.OrderStateOnChnaged += AgvcHandler.OrderStateOnChangeHandler;
+                agvc.CheckOnlineStateFromAGVSRequest += AgvcHandler.CheckOnlineStateHandler;
             }
         }
         /// <summary>
