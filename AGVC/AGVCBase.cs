@@ -58,6 +58,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
         public event EventHandler OrderStateOnChnaged;
         public event EventHandler<AGVCStateStore> StateOnChanged;
         public event EventHandler<IAGVC> CheckOnlineStateFromAGVSRequest;
+        public event EventHandler<OnOffLineRequest> OnlineOfflineRequest;
 
         /// <summary>
         /// 狀態變化事件委派
@@ -74,6 +75,9 @@ namespace GPM_AGV_LAT_CORE.AGVC
             bool connected = ConnectoAGVInstance();
             if (connected)
                 CheckOnlineStateFromAGVSRequest?.Invoke(this, this);
+
+            if (agvcStates.States.EOnlineState != ONLINE_STATE.ONLINE)
+                OnlineOfflineRequest?.Invoke(this, new OnOffLineRequest(this, ONLINE_STATE.ONLINE));
             agvcStates.States.EConnectionState = connected ? CONNECTION_STATE.CONNECTED : CONNECTION_STATE.DISCONNECT;
             return connected;
         }
@@ -172,6 +176,18 @@ namespace GPM_AGV_LAT_CORE.AGVC
         {
         }
 
+
+        public class OnOffLineRequest
+        {
+            public IAGVC agvc { get; private set; }
+            public ONLINE_STATE stateReq { get; private set; }
+
+            public OnOffLineRequest(IAGVC agvc, ONLINE_STATE stateReq)
+            {
+                this.agvc = agvc;
+                this.stateReq = stateReq;
+            }
+        }
 
     }
 }

@@ -16,6 +16,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
 {
     public class GPMAGVC : AGVCBase
     {
+
         public GPMAGVC()
         {
             agvcType = AGVC_TYPES.GPM;

@@ -1,4 +1,6 @@
-﻿using GangHaoAGV.Models.StateModels.Responses;
+﻿using GangHaoAGV.Models;
+using GangHaoAGV.Models.StateModels.Responses;
+using GangHaoAGV.Models.ControlModels.Responses;
 using GPM_AGV_LAT_CORE.AGVC;
 using GPM_AGV_LAT_CORE.Protocols.Tcp;
 using Newtonsoft.Json;
@@ -7,19 +9,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static GangHaoAGV.Models.StateModels.Responses.robotStatusRelocRes_11021;
+using System.Net.Sockets;
+using GPM_AGV_LAT_CORE.Logger;
 
-namespace GPM_AGV_LAT_CORE.Emulators
+namespace GPM_AGV_LAT_CORE.Emulators.GangHao
 {
-    public class GangHaoAgvcEmulator : KingGallentAgvsEmulator
+    public class GangHaoAgvc_StateEmulator : KingGallentAgvsEmulator
     {
 
         private int LocationXInitial = 0;
         private int LocationYInitial = 0;
+        public RELOC_STATE relocState = RELOC_STATE.RUNNING;
 
-        public GangHaoAgvcEmulator(string ip, int port) : base(ip, port)
+        public GangHaoAgvc_StateEmulator(string ip, int port) : base(ip, port)
         {
             LocationXInitial = new Random().Next(200, 300);
             LocationYInitial = new Random().Next(100, 700);
+            logger = new LoggerInstance(typeof(GangHaoAgvc_StateEmulator));
         }
 
         public override void Start()
@@ -57,7 +64,7 @@ namespace GPM_AGV_LAT_CORE.Emulators
 
         }
 
-        private ResModelBase DetermineReplyData(int cmbTypeNo)
+        virtual protected ResModelBase DetermineReplyData(int cmbTypeNo)
         {
             ResModelBase replyData = null;
             if (cmbTypeNo == 1000)
@@ -106,6 +113,14 @@ namespace GPM_AGV_LAT_CORE.Emulators
                     create_on = DateTime.Now.ToString("yyyyMMdd HH:mm:ss"),
                     ret_code = 0,
                     err_msg = "",
+                };
+            if (cmbTypeNo == 1021)
+                replyData = new robotStatusRelocRes_11021()
+                {
+                    create_on = DateTime.Now.ToString("yyyyMMdd HH:mm:ss"),
+                    ret_code = 0,
+                    err_msg = "",
+                    state = relocState
                 };
 
             return replyData;

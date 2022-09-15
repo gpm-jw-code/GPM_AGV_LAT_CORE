@@ -16,9 +16,8 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// </summary>
         public static List<IAGVC> AGVCList = new List<IAGVC>()
         {
-           new GangHaoAGVC() {ID="0001",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.233"} }},
-           new GangHaoAGVC() {ID="0002",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.111"} }},
-           new GangHaoAGVC() {ID="0003",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.112"} }},
+           new GangHaoAGVC() {ID="0001",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.104"} }},
+           new GangHaoAGVC() {ID="0002",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.233"} }},
         };
 
         /// <summary>
@@ -39,6 +38,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
                 agvc.StateOnChanged += AgvcHandler.StateOnChangedHandler;
                 agvc.OrderStateOnChnaged += AgvcHandler.OrderStateOnChangeHandler;
                 agvc.CheckOnlineStateFromAGVSRequest += AgvcHandler.CheckOnlineStateHandler;
+                agvc.OnlineOfflineRequest += AgvcHandler.OnlineOffLineRequestHandler;
             }
         }
         /// <summary>

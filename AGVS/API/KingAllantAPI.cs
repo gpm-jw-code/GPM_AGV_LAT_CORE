@@ -163,12 +163,33 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
             {
                 string jsonStr = states.ASCIIRev.Replace("*CR", "");
                 Dictionary<string, object> revObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonStr);
-                var headerdata = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string,object>>>(revObj["Header"].ToString());
+                var headerdata = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(revObj["Header"].ToString());
                 return headerdata["0102"]["Remote Mode"].ToString() == "1" ? ONLINE_STATE.ONLINE : ONLINE_STATE.OFFLINE;
             }
             else
                 return ONLINE_STATE.Unknown;
 
+        }
+
+        public ONLINE_STATE AgvcOnOffLineRequst(IAGVC agvc, ONLINE_STATE stateReq)
+        {
+            //先報一次0105
+            HandshakeRunningStatusReportHelper stateReport = new HandshakeRunningStatusReportHelper(agvc.agvcInfos as AgvcInfoForKingAllant);
+            var stateReportObj = stateReport.CreateStateReportDataModel(agvc.agvcStates);
+            RunningStatusReport(stateReportObj);
+
+
+            var onlineModeQueryModelJson = stateReport.CreateOnlineOfflineRequestJson(stateReq == ONLINE_STATE.OFFLINE ? 0 : 1, -1);
+            ReportRequestMessageSendOut(onlineModeQueryModelJson, out SocketStates states);
+            if (states.ASCIIRev.Contains("*CR"))
+            {
+                string jsonStr = states.ASCIIRev.Replace("*CR", "");
+                Dictionary<string, object> revObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonStr);
+                var headerdata = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(revObj["Header"].ToString());
+                return headerdata["0104"]["Return Code"].ToString() == "0" ? stateReq : agvc.agvcStates.States.EOnlineState;
+            }
+            else
+                return ONLINE_STATE.Unknown;
         }
     }
 }

@@ -60,7 +60,12 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// </summary>
         event EventHandler<AGVCStateStore> StateOnChanged;
         event EventHandler OrderStateOnChnaged;
+        /// <summary>
+        /// 上線狀態請求
+        /// </summary>
         event EventHandler<IAGVC> CheckOnlineStateFromAGVSRequest;
+
+        event EventHandler<AGVCBase.OnOffLineRequest> OnlineOfflineRequest;
 
         /// <summary>
         /// 與AGV車連線

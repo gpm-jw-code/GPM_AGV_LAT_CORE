@@ -14,7 +14,7 @@ namespace GPM_AGV_LAT_CORE.Emulators
 
     public class KingGallentAgvsEmulator
     {
-        ILogger logger = new LoggerInstance(typeof(KingGallentAgvsEmulator));
+        protected ILogger logger = new LoggerInstance(typeof(KingGallentAgvsEmulator));
         private static Dictionary<string, Socket> clients = new Dictionary<string, Socket>();
 
         public KingGallentAgvsEmulator(string ip, int port)
@@ -32,9 +32,9 @@ namespace GPM_AGV_LAT_CORE.Emulators
         }
 
 
-        protected void Server_OnClientConnected(object sender, Socket socket)
+        virtual protected void Server_OnClientConnected(object sender, Socket socket)
         {
-            //logger.InfoLog($"AGVC Connected {socket.RemoteEndPoint.ToString()}");
+            logger.InfoLog($"AGVC Connected {socket.RemoteEndPoint.ToString()}");
         }
 
         virtual public void Server_OnClientMessageRev(object sender, SocketStates e)

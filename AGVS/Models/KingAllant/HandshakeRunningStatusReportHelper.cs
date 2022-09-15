@@ -136,6 +136,17 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
         }
 
 
+
+        /// <summary>
+        /// 要求上線 0103
+        /// </summary>
+        /// <param name="ModeRequest">0:Offline;1:Online</param>
+        /// <param name="CurrentNode">目前位於的QR Code 或 Tag名稱</param>
+        /// <returns></returns>
+        public string CreateOnlineOfflineRequestJson(int ModeRequest, int CurrentNode)
+        {
+            return JsonConvert.SerializeObject(CreateOnlineOfflineRequest(ModeRequest, CurrentNode));
+        }
         /// <summary>
         /// 要求上線 0103
         /// </summary>

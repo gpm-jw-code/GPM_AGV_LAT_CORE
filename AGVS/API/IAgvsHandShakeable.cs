@@ -45,5 +45,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
         /// <param name="agvc"></param>
         /// <returns></returns>
         ONLINE_STATE DownloadAgvcOnlineState(IAGVC agvc);
+
+        ONLINE_STATE AgvcOnOffLineRequst(IAGVC agvc, ONLINE_STATE stateReq);
     }
 }

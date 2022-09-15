@@ -1,4 +1,5 @@
 ﻿using GPM_AGV_LAT_CORE.AGVC;
+using GPM_AGV_LAT_CORE.AGVC.AGVCStates;
 using GPM_AGV_LAT_CORE.AGVS;
 using GPM_AGV_LAT_CORE.AGVS.API;
 using GPM_AGV_LAT_CORE.LATSystem;
@@ -39,6 +40,19 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
         {
             var onlineState = agvc.agvsBinding.agvsApi.DownloadAgvcOnlineState(agvc);
             logger.InfoLog($"agvc-{agvc.EQName} online State download result : {onlineState}");
+            agvc.agvcStates.States.EOnlineState = onlineState;
+        }
+
+        /// <summary>
+        /// 要求上/下線
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="state"></param>
+        internal static void OnlineOffLineRequestHandler(object sender, AGVCBase.OnOffLineRequest state)
+        {
+            IAGVC agvc = state.agvc;
+            ONLINE_STATE stateReq = state.stateReq;
+            var onlineState = state.agvc.agvsBinding.agvsApi.AgvcOnOffLineRequst(agvc, stateReq);
             agvc.agvcStates.States.EOnlineState = onlineState;
         }
     }
