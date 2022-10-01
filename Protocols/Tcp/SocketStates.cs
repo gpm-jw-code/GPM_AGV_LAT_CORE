@@ -9,7 +9,7 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
 {
     public class SocketStates
     {
-        private int _bufferSize = 8192;
+        private int _bufferSize = 16384;
         public int bufferSize
         {
             get => _bufferSize;
@@ -20,8 +20,8 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
             }
         }
         public Socket socket;
-        public byte[] buffer = new byte[8192];
-        public SocketStates(int bufferSize = 8192)
+        public byte[] buffer = new byte[16384];
+        public SocketStates(int bufferSize = 16384)
         {
             this.bufferSize = bufferSize;
         }
@@ -32,11 +32,18 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
             get => _receieveLen;
             set
             {
-                _receieveLen = value;
+                try
+                {
+                    _receieveLen = value;
+                    revDataBytes = new byte[_receieveLen];
+                    Array.Copy(buffer, 0, revDataBytes, 0, _receieveLen);
+                    ASCIIRev = Encoding.ASCII.GetString(revDataBytes);
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
 
-                revDataBytes = new byte[_receieveLen];
-                Array.Copy(buffer, 0, revDataBytes, 0, _receieveLen);
-                ASCIIRev = Encoding.ASCII.GetString(revDataBytes);
             }
         }
 

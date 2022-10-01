@@ -6,13 +6,12 @@ using System.Threading.Tasks;
 
 namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
 {
-    public class clsLATOrderDetail
+    public class clsLATTaskOrder
     {
         /// <summary>
         /// 任務名稱(global唯一)
         /// </summary>
         public string taskName { get; set; }
-
 
         /// <summary>
         /// 被指派的AGV名稱
@@ -22,15 +21,15 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
         /// <summary>
         /// 任務動作列表
         /// </summary>
-        public List<clsAction> actions { get; set; } = new List<clsAction>();
-        /// <summary>
-        /// 任務是否封口 (封口:不可再添加新的動作 ; 不封口:可再添加新的動作)
-        /// </summary>
-        public bool complete { get; set; } = false;
+        public clsAction action { get; set; } = new clsAction();
 
 
         public class clsAction
         {
+            public enum ACTION_TYPE
+            {
+                NAVIGATOR
+            }
             /// <summary>
             /// 動作ID(唯一)
             /// </summary>
@@ -38,11 +37,13 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
             /// <summary>
             /// 目標點位
             /// </summary>
-            public string location { get; set; }
+            public string stationID { get; set; }
             /// <summary>
             /// 動作參數
             /// </summary>
-            public Dictionary<string, object> operation_args { get; set; }=new Dictionary<string, object>();
+            public Dictionary<string, object> operation_args { get; set; } = new Dictionary<string, object>();
+
+            public List<string> paths { get; set; } = new List<string>();
 
         }
     }

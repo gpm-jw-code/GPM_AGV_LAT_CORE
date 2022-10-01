@@ -11,6 +11,7 @@ using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
 using GPM_AGV_LAT_CORE.LATSystem;
 using GPM_AGV_LAT_CORE.Logger;
 using GPM_AGV_LAT_CORE.Parameters;
+using static GPM_AGV_LAT_CORE.AGVC.AGVCStates.AlarmStates;
 
 namespace GPM_AGV_LAT_CORE.AGVC
 {
@@ -60,11 +61,15 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// </summary>
         event EventHandler<AGVCStateStore> StateOnChanged;
         event EventHandler OrderStateOnChnaged;
+
         /// <summary>
-        /// 上線狀態請求
+        /// 上線狀態查詢請求事件
         /// </summary>
         event EventHandler<IAGVC> CheckOnlineStateFromAGVSRequest;
 
+        /// <summary>
+        /// 上/下線請求事件
+        /// </summary>
         event EventHandler<AGVCBase.OnOffLineRequest> OnlineOfflineRequest;
 
         /// <summary>
@@ -86,6 +91,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// </summary>
         Task SyncSyncOrderExecuteState();
 
+        Task<ORDER_STATE> TaskStateDownload(string taskName);
         /// <summary>
         /// 將訂單加入列表
         /// </summary>
@@ -94,11 +100,17 @@ namespace GPM_AGV_LAT_CORE.AGVC
         void AddHostOrder(clsHostExecuting order);
 
         /// <summary>
+        /// 車子原生的Alarm數據
+        /// </summary>
+        /// <returns></returns>
+        Task<object> GetNativeAlarmState();
+        AlarmStates GetLatAlarm(object nativeAlarm);
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         void AGVCDataConvertToLATFormat(object agvcData);
-
+        List<string> GetMapNames();
     }
 }

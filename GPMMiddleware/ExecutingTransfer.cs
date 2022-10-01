@@ -1,8 +1,11 @@
 ﻿using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
 using System.Threading.Tasks;
-using GangHaoAGV.Models.Order;
 using GangHaoAGV.API;
 using GPM_AGV_LAT_CORE.LATSystem;
+using GPM_AGV_LAT_CORE.AGVC;
+using GangHaoAGV.Models.MapModels.Requests;
+using System.Collections.Generic;
+using static GangHaoAGV.AGV.clsMap;
 
 namespace GPM_AGV_LAT_CORE.GPMMiddleware
 {
@@ -19,23 +22,27 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
             /// </summary>
             /// <param name="newExecuting"></param>
             /// <returns></returns>
-            internal static async Task<bool> TransferToGangHao(clsHostExecuting newExecuting)
+            internal static async Task<MapReqResult> TransferToGangHao(clsHostExecuting newExecuting)
             {
+                GangHaoAGVC haoAGVC = (GangHaoAGVC)newExecuting.ExecutingAGVC;
+                MapReqResult response = null;
                 var ExecuteType = newExecuting.EExecuteType;
-                ServerAPI api = new ServerAPI() { baseUrl = SystemParams.GangHaoRDSCoreServerUrl };
-                ResponseBase response = null;
 
                 if (ExecuteType == ExcutingPreProcessor.EXECUTE_TYPE.Order)
                 {
-                    SetOrder gangOrder = OrderConverter.LATToAGVC.ToGangHaoOrder(newExecuting.latOrderDetail);
-                    response = await api.SetOrder(gangOrder);
+                    //haoAGVC.AGVInterface.
+                    //robotMapTaskGoTargetListReq_3066 task_3066 = OrderConverter.LATToAGVC.ToGangHaoOrder(newExecuting.latOrderDetail);
+                    var task_3051 = OrderConverter.LATToAGVC.ToGanHaoOrder.ToGoTargetOrder(newExecuting.latOrderDetail);
+                    response = await haoAGVC.AGVInterface.NAVIGATIOR.GoTarget(task_3051);
+
                 }
                 else if (ExecuteType == ExcutingPreProcessor.EXECUTE_TYPE.Reset)
                 {
-                    response = await api.TerminateAGVCurrentOrder(newExecuting.ExecuteingAGVC.agvcID, true);
+                    response = new MapReqResult();
+                    response.Success = await haoAGVC.AGVInterface.NAVIGATIOR.TaskCancel();
                 }
 
-                return response == null ? false : (response.code == 0);
+                return response;
             }
 
             /// <summary>

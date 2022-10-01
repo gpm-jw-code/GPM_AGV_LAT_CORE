@@ -9,6 +9,7 @@ using GPM_AGV_LAT_CORE.AGVC.AGVCStates;
 using GPM_AGV_LAT_CORE.AGVS.Models.KingAllant;
 using GPM_AGV_LAT_CORE.GPMMiddleware;
 using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
+using GPM_AGV_LAT_CORE.Logger;
 using GPM_AGV_LAT_CORE.Protocols.Tcp;
 using Newtonsoft.Json;
 
@@ -20,29 +21,22 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
 
         public readonly TcpSocketClient socketClient;
 
+        public MessageHandShakeLogger mhsLogger { get; } = new MessageHandShakeLogger();
+
         public KingAllantAPI(TcpSocketClient socketClient)
         {
             this.socketClient = socketClient;
         }
 
-        public void OnlineRequest(int[] agvNos)
-        {
-            foreach (var no in agvNos)
-            {
-                HandshakeRunningStatusReportHelper request = new HandshakeRunningStatusReportHelper($"00{no}:001:001", $"AGV_00{no}");
-                var json = JsonConvert.SerializeObject(request.CreateOnlineOfflineRequest(1, no * 1000));
-                ReportRequestMessageSendOut(json, out SocketStates states);
-            }
-        }
 
-        public bool RunningStatusReport(Dictionary<string, object> agvcRunningStateData)
+        public async Task<bool> RunningStatusReport(Dictionary<string, object> agvcRunningStateData)
         {
-            ReportRequestMessageSendOut(JsonConvert.SerializeObject(agvcRunningStateData), out SocketStates states);
+            SocketStates states = await ReportRequestMessageSendOut(JsonConvert.SerializeObject(agvcRunningStateData));
             return states.receieveLen != 0;
         }
 
 
-        public void TaskDownloadReport(IAGVC agvc, bool success, IAGVSExecutingState executingState)
+        public async Task TaskDownloadReport(IAGVC agvc, bool success, IAGVSExecutingState executingState)
         {
             AgvcInfoForKingAllant agvcInfo = (AgvcInfoForKingAllant)agvc.agvcInfos;
             Dictionary<string, object> taskDownloadReply = CreateModelBase(agvc);
@@ -54,7 +48,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
                 }
                 }
             };
-            AckMessageSendOut(JsonConvert.SerializeObject(taskDownloadReply));
+            await AckMessageSendOut(JsonConvert.SerializeObject(taskDownloadReply));
         }
         public void ResetReport(IAGVC agvc, bool success, IAGVSExecutingState executingState)
         {
@@ -74,19 +68,21 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
 
         public void TaskStateFeedback(clsHostExecuting order)
         {
-            var agvcInfo = order.ExecuteingAGVC.agvcInfoForagvs as AgvcInfoForKingAllant;
+            var agvcInfo = order.ExecuteingAGVCInfo.agvcInfoForagvs as AgvcInfoForKingAllant;
             Dictionary<string, object> taskDownloadReply = CreateModelBase(agvcInfo);
             taskDownloadReply["Header"] = new Dictionary<string, object>()
             {
                  {"0303", new Dictionary<string, object>()
                         {
-                            { "Time Stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss") },
-                            { "Task Name", order.latOrderDetail.taskName },
+                            { "Time Stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss") }, //上報時間
+                            { "Task Name", order.latOrderDetail.taskName },     //任務名稱
+                            { "Task Simplex", order.latOrderDetail.taskName },  //任務TC拆解段落下給AGVC(??? 工蝦小)
+                            { "Task Sequence", order.latOrderDetail.taskName }, //該路徑的第幾個點位
                             { "Task Status", GetTaskStatusFromLATState(order.State)},
                         }
                     }
             };
-            ReportRequestMessageSendOut(JsonConvert.SerializeObject(taskDownloadReply), out SocketStates states);
+            ReportRequestMessageSendOut(JsonConvert.SerializeObject(taskDownloadReply));
         }
 
         private Dictionary<string, object> CreateModelBase(AgvcInfoForKingAllant agvcInfo)
@@ -128,12 +124,13 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
             }
         }
 
-        private bool AckMessageSendOut(string json)
+        private async Task<bool> AckMessageSendOut(string json)
         {
             json = json + "*CR";
+            mhsLogger.LATToAGVS(json);
             try
             {
-                SocketStates ret = socketClient.Send(Encoding.ASCII.GetBytes(json), false);
+                SocketStates ret = await socketClient.Send(Encoding.ASCII.GetBytes(json), false);
                 return true;
             }
             catch (Exception ex)
@@ -143,22 +140,23 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
             }
         }
 
-        private bool ReportRequestMessageSendOut(string requestJson, out SocketStates states)
+        private async Task<SocketStates> ReportRequestMessageSendOut(string requestJson)
         {
             string json = requestJson + "*CR";
-            states = socketClient.Send(Encoding.ASCII.GetBytes(json), true);
-            return states.receieveLen > 0;
+            var states = await socketClient.Send(Encoding.ASCII.GetBytes(json), true);
+            mhsLogger.LATToAGVS(json);
+            return states;
         }
 
-        public ONLINE_STATE DownloadAgvcOnlineState(IAGVC agvc)
+        public async Task<ONLINE_STATE> DownloadAgvcOnlineState(IAGVC agvc)
         {
             //先報一次0105
             HandshakeRunningStatusReportHelper stateReport = new HandshakeRunningStatusReportHelper(agvc.agvcInfos as AgvcInfoForKingAllant);
             var stateReportObj = stateReport.CreateStateReportDataModel(agvc.agvcStates);
 
-            RunningStatusReport(stateReportObj);
+            await RunningStatusReport(stateReportObj);
             var onlineModeQueryModelJson = stateReport.CreateOnlineOfflineModeQueryModelJson();
-            ReportRequestMessageSendOut(onlineModeQueryModelJson, out SocketStates states);
+            var states = await ReportRequestMessageSendOut(onlineModeQueryModelJson);
             if (states.ASCIIRev.Contains("*CR"))
             {
                 string jsonStr = states.ASCIIRev.Replace("*CR", "");
@@ -171,22 +169,30 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
 
         }
 
-        public ONLINE_STATE AgvcOnOffLineRequst(IAGVC agvc, ONLINE_STATE stateReq)
+        public async Task<ONLINE_STATE> AgvcOnOffLineRequst(IAGVC agvc, ONLINE_STATE stateReq)
         {
             //先報一次0105
             HandshakeRunningStatusReportHelper stateReport = new HandshakeRunningStatusReportHelper(agvc.agvcInfos as AgvcInfoForKingAllant);
             var stateReportObj = stateReport.CreateStateReportDataModel(agvc.agvcStates);
-            RunningStatusReport(stateReportObj);
+            await RunningStatusReport(stateReportObj);
 
 
             var onlineModeQueryModelJson = stateReport.CreateOnlineOfflineRequestJson(stateReq == ONLINE_STATE.OFFLINE ? 0 : 1, -1);
-            ReportRequestMessageSendOut(onlineModeQueryModelJson, out SocketStates states);
+            var states = await ReportRequestMessageSendOut(onlineModeQueryModelJson);
             if (states.ASCIIRev.Contains("*CR"))
             {
                 string jsonStr = states.ASCIIRev.Replace("*CR", "");
                 Dictionary<string, object> revObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonStr);
                 var headerdata = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(revObj["Header"].ToString());
-                return headerdata["0104"]["Return Code"].ToString() == "0" ? stateReq : agvc.agvcStates.States.EOnlineState;
+
+                if (headerdata.ContainsKey("0104"))
+                {
+                    return headerdata["0104"]["Return Code"].ToString() == "0" ? stateReq : agvc.agvcStates.States.EOnlineState;
+                }
+                else
+                {
+                    return ONLINE_STATE.Unknown;
+                }
             }
             else
                 return ONLINE_STATE.Unknown;

@@ -32,5 +32,6 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// </summary>
         public BetteryStates BetteryState { get; set; } = new BetteryStates();
 
+        public AlarmStates AlarmState { get; set; } = new AlarmStates();
     }
 }

@@ -1,9 +1,9 @@
 ﻿using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
 using System;
 using System.Linq;
-using GangHaoAGV.Models.Order;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using GangHaoAGV.Models.MapModels.Requests;
 
 namespace GPM_AGV_LAT_CORE.GPMMiddleware
 {
@@ -19,33 +19,55 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
             /// </summary>
             internal struct LATToAGVC
             {
-                /// <summary>
-                /// 轉成 罡豪 AGVC 訂單格式
-                /// </summary>
-                /// <param name="latOrder"></param>
-                /// <returns></returns>
-                internal static SetOrder ToGangHaoOrder(clsLATOrderDetail latOrder)
+
+                internal struct ToGanHaoOrder
                 {
-                    return new SetOrder()
+                    ///// <summary>
+                    ///// 轉成 罡豪 AGVC 訂單格式
+                    ///// </summary>
+                    ///// <param name="latOrder"></param>
+                    ///// <returns></returns>
+                    //internal static robotMapTaskGoTargetListReq_3066 ToGoTargetListOrder(List<clsLATTaskOrder> latOrder)
+                    //{
+                    //    List<clsLATTaskOrder.clsAction> actions = latOrder.actions;
+                    //    string taskID = latOrder.taskName;
+                    //    List<robotMapTaskGoTargetReq_3051> targetList = new List<robotMapTaskGoTargetReq_3051>();
+                    //    for (int i = 1; i < actions.Count; i++)
+                    //    {
+                    //        robotMapTaskGoTargetReq_3051 target = new robotMapTaskGoTargetReq_3051()
+                    //        {
+                    //            source_id = actions[i - 1].stationID,
+                    //            id = actions[i].stationID,
+                    //            task_id = taskID + $"-{i}"
+
+                    //        };
+                    //        targetList.Add(target);
+                    //    }
+
+                    //    return new robotMapTaskGoTargetListReq_3066()
+                    //    {
+                    //        move_task_list = targetList
+                    //    };
+                    //}
+
+                    internal static robotMapTaskGoTargetReq_3051 ToGoTargetOrder(clsLATTaskOrder latOrder)
                     {
-                        id = latOrder.taskName,
-                        complete = latOrder.complete,
-                        priority = 999,
-                        vehicle = latOrder.executEqName,
-                        blocks = latOrder.actions.Select(act => new Block()
+                        return new robotMapTaskGoTargetReq_3051
                         {
-                            blockId = act.actionID,
-                            location = act.location,
-                            operationArgs = act.operation_args
-                        }).ToList()
-                    };
+                            task_id = latOrder.taskName,
+                            id = latOrder.action.stationID,
+                            source_id = "SELF_POSITION"
+                        };
+                    }
+
                 }
+
                 /// <summary>
                 /// 轉成 GPM AGVC 訂單格式
                 /// </summary>
                 /// <param name="latOrderDetail"></param>
                 /// <exception cref="NotImplementedException"></exception>
-                internal static void ToGPMOrder(clsLATOrderDetail latOrderDetail)
+                internal static void ToGPMOrder(clsLATTaskOrder latOrderDetail)
                 {
                     throw new NotImplementedException();
                 }
@@ -60,7 +82,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                 /// </summary>
                 /// <param name="orderObject"></param>
                 /// <returns></returns>
-                internal static clsLATOrderDetail KingGallentOrderToLATOrder(Dictionary<string, object> orderObject)
+                internal static clsLATTaskOrder KingGallentOrderToLATOrder(Dictionary<string, object> orderObject)
                 {
 
                     var headerObj = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(orderObject["Header"].ToString());
@@ -68,24 +90,21 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                     {
                         return null;
                     }
-
                     var taskItem = headerObj.First().Value;
-
-                    string _taskName = taskItem["Task Name"].ToString();
                     string _eqName = orderObject["EQName"].ToString();
+                    string _taskName = taskItem["Task Name"].ToString();
                     //TODO 解析actions (路徑)
-                    string _action1_name = _taskName + "-block1";
-                    return new clsLATOrderDetail()
+                    string trajectoryJson = taskItem["Trajectory"].ToString();
+                    var trajectory = JsonConvert.DeserializeObject < Dictionary<string, Dictionary<string, object>>>(trajectoryJson);
+
+                    return new clsLATTaskOrder()
                     {
                         taskName = _taskName,
-                        complete = false,
                         executEqName = _eqName,
-                        actions = new List<clsLATOrderDetail.clsAction>()
+                        action = new clsLATTaskOrder.clsAction()
                         {
-                            new clsLATOrderDetail.clsAction(){
-                                actionID = _action1_name,
-                                location ="PA1"
-                            },
+                            actionID = _taskName + "-action",
+                            stationID = trajectory.Keys.First()
                         }
                     };
                 }
@@ -95,7 +114,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                 /// <param name="taskObject"></param>
                 /// <returns></returns>
                 /// <exception cref="NotImplementedException"></exception>
-                internal static clsLATOrderDetail GPMOrderToLATOrder(object taskObject)
+                internal static clsLATTaskOrder GPMOrderToLATOrder(object taskObject)
                 {
                     throw new NotImplementedException();
                 }

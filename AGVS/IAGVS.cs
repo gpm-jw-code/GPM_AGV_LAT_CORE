@@ -1,6 +1,7 @@
 ﻿using GPM_AGV_LAT_CORE.AGVC;
 using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
 using GPM_AGV_LAT_CORE.AGVS.API;
+using GPM_AGV_LAT_CORE.GPMMiddleware;
 using GPM_AGV_LAT_CORE.LATSystem;
 using GPM_AGV_LAT_CORE.Parameters;
 using System;
@@ -53,6 +54,8 @@ namespace GPM_AGV_LAT_CORE.AGVS
         /// 需要上系統的AGV車輛參數組
         /// </summary>
         List<IAgvcInfoToAgvs> BindingAGVCInfoList { get; set; }
+
+        List<clsHostExecuting> ExecuteTaskList { get; set; }
 
         #endregion
 

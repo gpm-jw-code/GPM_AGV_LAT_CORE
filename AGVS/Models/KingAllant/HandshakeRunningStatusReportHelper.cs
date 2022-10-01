@@ -96,7 +96,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
                         { "AGV Status",model.AGVStatus},
                         { "Escape Flag",model.EscapeFlag},
                         { "Sensor Status",model.SensorStatus},
-                        { "CPU Usage Percen",model.CpuUsagePercent},
+                        { "CPU Usage Percent",model.CpuUsagePercent},
                         { "RAM Usage Percent",model.RamUsagePercent},
                         { "AGV Reset Flag",model.AgvResetFlag},
                         { "Signal Strength",model.SignalStrength},
@@ -167,13 +167,27 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
         }
 
 
-        public Dictionary<string, object> CreateTaskDownload(string taskName)
+        public Dictionary<string, object> CreateTaskDownload(string taskName, string stationID)
         {
             returnObj["Header"] = new Dictionary<string, object>()
             {
                 { "0301" , new Dictionary<string, object>(){
                     {"Time stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss")},
                     {"Task Name",taskName},
+                    {"Task Simplex",taskName},
+                    {"Task Sequence",taskName},
+                    {"Trajectory", new Dictionary<string,Dictionary<string,object>>()
+                        {
+                            {stationID, new Dictionary<string, object>()
+                                {
+                                    {"Point ID" , 4213 },
+                                    {"X" , 1.5 },
+                                    {"Y" , 1.5 },
+                                    {"Theta" , 0.5 },
+                                }
+                            }
+                        }
+                    },
                 } }
             };
             return returnObj;

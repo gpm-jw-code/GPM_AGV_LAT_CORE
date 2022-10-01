@@ -2,6 +2,7 @@
 using GPM_AGV_LAT_CORE.AGVC.AGVCStates;
 using GPM_AGV_LAT_CORE.GPMMiddleware;
 using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
+using GPM_AGV_LAT_CORE.Logger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,14 +18,14 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
         /// </summary>
         /// <param name="agvcRunningStateData"></param>
         /// <returns></returns>
-        bool RunningStatusReport(Dictionary<string, object> agvcRunningStateData);
+        Task<bool> RunningStatusReport(Dictionary<string, object> agvcRunningStateData);
 
         /// <summary>
         /// [被動回覆] 回覆Task Download Result給派車
         /// </summary>
         /// <param name="agvc">被指派的AGVC</param>
         /// <param name="success">AGVC是否會執行訂單?</param>
-        void TaskDownloadReport(IAGVC agvc, bool success, IAGVSExecutingState executingState);
+        Task TaskDownloadReport(IAGVC agvc, bool success, IAGVSExecutingState executingState);
         /// <summary>
         /// [被動回覆] 回覆Task Download Result給派車
         /// </summary>
@@ -44,8 +45,12 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
         /// </summary>
         /// <param name="agvc"></param>
         /// <returns></returns>
-        ONLINE_STATE DownloadAgvcOnlineState(IAGVC agvc);
+        Task<ONLINE_STATE> DownloadAgvcOnlineState(IAGVC agvc);
 
-        ONLINE_STATE AgvcOnOffLineRequst(IAGVC agvc, ONLINE_STATE stateReq);
+        Task<ONLINE_STATE> AgvcOnOffLineRequst(IAGVC agvc, ONLINE_STATE stateReq);
+        /// <summary>
+        /// 交握log
+        /// </summary>
+        MessageHandShakeLogger mhsLogger { get; }
     }
 }

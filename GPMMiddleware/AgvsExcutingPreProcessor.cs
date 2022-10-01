@@ -28,7 +28,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
         EXECUTE_TYPE EExecuteType { get; set; }
         IAGVC agvcFound { get; set; }
         IAGVC FindAGV();
-        clsLATOrderDetail OrderConvertToLATFormat();
+        clsLATTaskOrder OrderConvertToLATFormat();
         /// <summary>
         /// 判斷派車指令類型
         /// </summary>
@@ -48,7 +48,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
         public EXECUTE_TYPE EExecuteType { get; set; }
         public dynamic taskDownloadObject { get; set; }
 
-        virtual public clsLATOrderDetail OrderConvertToLATFormat()
+        virtual public clsLATTaskOrder OrderConvertToLATFormat()
         {
             throw new NotImplementedException();
         }
@@ -68,6 +68,8 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
             this.aGVSExecutingState = aGVSExecutingState;
             EExecuteType = JudgeExecutingType();
             agvcFound = FindAGV();
+            taskDownloadObject = aGVSExecutingState.executingObject;
+
             clsHostExecuting newExecuting = new clsHostExecuting(agvs, agvcFound, taskDownloadObject, EExecuteType)
             {
                 RecieveTimeStamp = DateTime.Now,
@@ -76,7 +78,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
 
             if (EExecuteType == EXECUTE_TYPE.Order)
             {
-                clsLATOrderDetail latOrder = OrderConvertToLATFormat();
+                clsLATTaskOrder latOrder = OrderConvertToLATFormat();
                 newExecuting.latOrderDetail = latOrder;
             }
 
@@ -98,7 +100,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
             else
                 return EXECUTE_TYPE.UnKnown;
         }
-        public override clsLATOrderDetail OrderConvertToLATFormat()
+        public override clsLATTaskOrder OrderConvertToLATFormat()
         {
             this.taskDownloadObject = _taskObj;
             return OrderConverter.AGVSToLAT.KingGallentOrderToLATOrder(_taskObj);
@@ -107,8 +109,8 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
         public override IAGVC FindAGV()
         {
             //解析
-            string SID = _taskObj["SID"].ToString();
-            IAGVC agvc = AGVCManager.FindAGVCInKingGallentBySID(SID);
+            string EQName = _taskObj["EQName"].ToString();
+            IAGVC agvc = AGVCManager.FindAGVCInKingGallentBySID(EQName);
             return agvc;
         }
 
@@ -127,7 +129,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
         {
             return AGVCManager.FindAGVCInGPM();
         }
-        public override clsLATOrderDetail OrderConvertToLATFormat()
+        public override clsLATTaskOrder OrderConvertToLATFormat()
         {
             return OrderConverter.AGVSToLAT.GPMOrderToLATOrder(aGVSExecutingState);
         }

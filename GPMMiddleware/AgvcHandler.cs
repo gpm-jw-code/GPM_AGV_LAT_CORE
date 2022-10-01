@@ -38,7 +38,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
 
         internal static void CheckOnlineStateHandler(object sender, IAGVC agvc)
         {
-            var onlineState = agvc.agvsBinding.agvsApi.DownloadAgvcOnlineState(agvc);
+            var onlineState = agvc.agvsBinding.agvsApi.DownloadAgvcOnlineState(agvc).Result;
             logger.InfoLog($"agvc-{agvc.EQName} online State download result : {onlineState}");
             agvc.agvcStates.States.EOnlineState = onlineState;
         }
@@ -52,8 +52,10 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
         {
             IAGVC agvc = state.agvc;
             ONLINE_STATE stateReq = state.stateReq;
-            var onlineState = state.agvc.agvsBinding.agvsApi.AgvcOnOffLineRequst(agvc, stateReq);
+            logger.InfoLog($"[Online/Offline Request Handle]{agvc.EQName} 要求 {stateReq.ToString()}");
+            var onlineState = state.agvc.agvsBinding.agvsApi.AgvcOnOffLineRequst(agvc, stateReq).Result;
             agvc.agvcStates.States.EOnlineState = onlineState;
+            logger.InfoLog($"[Online/Offline Request Handle]{agvc.EQName} 上線狀態現在是 {onlineState.ToString()}");
         }
     }
 }

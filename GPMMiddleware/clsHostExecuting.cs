@@ -18,16 +18,19 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
     /// </summary>
     public class clsHostExecuting : INotifyPropertyChanged
     {
+
+        public event PropertyChangedEventHandler PropertyChanged;
         public clsHostExecuting(IAGVS fromAGVS, IAGVC toAGVC, object TaskDownloadData)
         {
             this.FromAGVS = new clsOrderAGVSinfo(fromAGVS.agvsType);
-            this.ExecuteingAGVC = new clsOrderAGVCinfo(toAGVC.agvcType, toAGVC.EQName, toAGVC.agvcInfos);
+            this.ExecuteingAGVCInfo = new clsOrderAGVCinfo(toAGVC.agvcType, toAGVC.EQName, toAGVC.agvcInfos);
             this.TaskDownloadData = TaskDownloadData;
         }
         public clsHostExecuting(IAGVS fromAGVS, IAGVC toAGVC, object TaskDownloadData, EXECUTE_TYPE EExecuteType)
         {
+            ExecutingAGVC = toAGVC;
             this.FromAGVS = new clsOrderAGVSinfo(fromAGVS.agvsType);
-            this.ExecuteingAGVC = new clsOrderAGVCinfo(toAGVC.agvcType, toAGVC.EQName, toAGVC.agvcInfos);
+            this.ExecuteingAGVCInfo = new clsOrderAGVCinfo(toAGVC.agvcType, toAGVC.EQName, toAGVC.agvcInfos);
             this.TaskDownloadData = TaskDownloadData;
             this.EExecuteType = EExecuteType;
         }
@@ -61,7 +64,9 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
         /// <summary>
         /// 執行訂單的AGVC
         /// </summary>
-        public clsOrderAGVCinfo ExecuteingAGVC { get; set; }
+        public clsOrderAGVCinfo ExecuteingAGVCInfo { get; set; }
+
+        internal IAGVC ExecutingAGVC;
         /// <summary>
         /// 發派任務的AGVS
         /// </summary>
@@ -91,17 +96,15 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
         /// </summary>
         public object TaskDownloadData { get; private set; }
 
-
-        public event PropertyChangedEventHandler PropertyChanged;
         private void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName) { });
         }
 
         /// <summary>
-        /// LAT格式的ORDER
+        /// [LAT] 格式的 Order
         /// </summary>
-        public clsLATOrderDetail latOrderDetail { get; internal set; }
+        public clsLATTaskOrder latOrderDetail { get; internal set; }
 
         public clsAGVCReset agvcReset { get; set; } = new clsAGVCReset();
 

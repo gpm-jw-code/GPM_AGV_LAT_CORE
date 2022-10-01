@@ -5,7 +5,9 @@ using GPM_AGV_LAT_CORE.GPMMiddleware;
 using GPM_AGV_LAT_CORE.LATSystem;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace GPM_AGV_LAT_CORE.AGVC
 {
@@ -17,8 +19,9 @@ namespace GPM_AGV_LAT_CORE.AGVC
         public static List<IAGVC> AGVCList = new List<IAGVC>()
         {
            new GangHaoAGVC() {ID="0001",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.104"} }},
-           new GangHaoAGVC() {ID="0002",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.233"} }},
+           new GangHaoAGVC() {ID="0002",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.107"} }},
         };
+
 
         /// <summary>
         /// 取得所有IDLE狀態的AGV
@@ -41,6 +44,58 @@ namespace GPM_AGV_LAT_CORE.AGVC
                 agvc.OnlineOfflineRequest += AgvcHandler.OnlineOffLineRequestHandler;
             }
         }
+
+        public static IAGVC GetAGVCByEqName(string eqName)
+        {
+            return AGVCList.FirstOrDefault(agv => agv.EQName == eqName);
+        }
+
+        public static async Task<dynamic> GetAgvcNativeDataByEqName(string eqName)
+        {
+            IAGVC agvc = GetAGVCByEqName(eqName);
+            if (agvc == null)
+                return "";
+
+            dynamic data = new ExpandoObject();
+            if (agvc.agvcType == AGVC_TYPES.GangHau)
+            {
+                GangHaoAGVC gagvc = agvc as GangHaoAGVC;
+                var api = gagvc.AGVInterface.STATES.API;
+                var status = await api.GetRobotStatusInfo();
+                await Task.Delay(TimeSpan.FromMilliseconds(400));
+                var battery = await api.GetRobotBattery();
+                data.status = status;
+                data.battery = battery;
+                return data;
+            }
+
+
+            return data;
+
+
+        }
+
+        public static async Task<object> getAlarmStateByEqName(string eqName)
+        {
+            IAGVC agvc = GetAGVCByEqName(eqName);
+            return await agvc.GetNativeAlarmState();
+        }
+
+        public static List<IAGVC> GetAGVCByMapName(string mapName)
+        {
+            return AGVCList.FindAll(agv => agv.agvcStates.MapStates.currentMapInfo.name == mapName);
+        }
+
+        public static List<string> GetMapNames()
+        {
+            List<string> mapNameList = new List<string>();
+            foreach (var agvc in AGVCList)
+            {
+                mapNameList.AddRange(agvc.GetMapNames());
+            }
+            return mapNameList.Distinct().ToList();
+        }
+
         /// <summary>
         /// 與所有的AGV車連線喔
         /// </summary>
@@ -49,9 +104,15 @@ namespace GPM_AGV_LAT_CORE.AGVC
             foreach (IAGVC agvc in AGVCList.FindAll(agvc => agvc.agvcInfos != null))
             {
                 agvc.ConnectToAGV();
-                agvc.SyncState();
-                agvc.SyncOrdersState();
-                agvc.SyncSyncOrderExecuteState();
+            }
+        }
+        internal static void StartStateAsync()
+        {
+            foreach (IAGVC agvc in AGVCList.FindAll(agvc => agvc.agvcInfos != null))
+            {
+                Task.Run(() => agvc.SyncState());
+                Task.Run(() => agvc.SyncOrdersState());
+                Task.Run(() => agvc.SyncSyncOrderExecuteState());
             }
         }
 
@@ -90,7 +151,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
                 Console.WriteLine("找不到任何車屬於晶捷能派車系統");
                 return null;
             }
-            var agvc = agcList.FirstOrDefault(agv => ((AgvcInfoForKingAllant)agv.agvcInfos).SID == SID);
+            var agvc = agcList.FirstOrDefault(agv => ((AgvcInfoForKingAllant)agv.agvcInfos).EQName== SID);
             if (agvc == null)
             {
                 Console.WriteLine("找不到任何車SID為{0}", SID);

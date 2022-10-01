@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using GPM_AGV_LAT_CORE.AGVS.API;
 using GPM_AGV_LAT_CORE.LATSystem;
 using GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor;
+using GPM_AGV_LAT_CORE.Logger;
 
 namespace GPM_AGV_LAT_CORE.GPMMiddleware
 {
@@ -20,6 +21,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
     /// </summary>
     internal partial class AgvsHandler
     {
+        static ILogger logger = new LoggerInstance(typeof(AgvsHandler));
         /// <summary>
         /// 處理晶捷能派車平台任務下載
         /// </summary>
@@ -55,14 +57,24 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
         /// <param name="newExecuting"></param>
         private static async void ExecutingTransferWorkFlow(IAGVS agvs, IAGVC agvc, clsHostExecuting newExecuting, IAGVSExecutingState executingState)
         {
+
+            agvs.ExecuteTaskList.Add(newExecuting);
+
             var executeType = newExecuting.EExecuteType;
             if (executeType == EXECUTE_TYPE.Order)
             {
                 newExecuting = OrderManerger.NewOrderJoin(newExecuting);
-                newExecuting.PropertyChanged += (order, e) => TaskStateFeedBack(agvs, order as clsHostExecuting);
+                //newExecuting.PropertyChanged += (order, e) => agvs.agvsApi.TaskStateFeedback(order as clsHostExecuting); ;
             }
             bool setOrderSuccess = await TransferExecutingToAGVC(agvc, newExecuting);
+
+            logger.TraceLog($"AGVC |{agvc.EQName}| 執行任務? : {setOrderSuccess}");
+            executingState.state = newExecuting.State = setOrderSuccess ? ORDER_STATE.EXECUTING : ORDER_STATE.WAIT_EXECUTE;
             ExecutingResultReport(agvs, agvc, executeType, setOrderSuccess, executingState);
+            TaskOrderStateTrack orderStateTracker = new TaskOrderStateTrack(agvs, agvc, newExecuting);
+
+            if (setOrderSuccess)
+                orderStateTracker.StartTrack();
         }
 
 
@@ -91,32 +103,31 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
         /// <returns></returns>
         private static async Task<bool> TransferExecutingToAGVC(IAGVC agvc, clsHostExecuting newExecuting)
         {
-            bool setOrderSuccess = false;
-            AGVC_TYPES agvcType = agvc.agvcType;
-            if (agvcType == AGVC_TYPES.GangHau)
+            try
             {
-                setOrderSuccess = await ExecutingTransfer.TransferToGangHao(newExecuting);
+                bool setOrderSuccess = false;
+                AGVC_TYPES agvcType = agvc.agvcType;
+                if (agvcType == AGVC_TYPES.GangHau)
+                {
+                    GangHaoAGV.AGV.clsMap.MapReqResult res = await ExecutingTransfer.TransferToGangHao(newExecuting);
+                    setOrderSuccess = res.Success;
+                    newExecuting.latOrderDetail.action.paths = res.Path.ToList();
+                }
+                else if (agvcType == AGVC_TYPES.GPM)
+                {
+                    setOrderSuccess = await ExecutingTransfer.TransferToGPM(newExecuting);
+                }
+
+                //newExecuting.State = setOrderSuccess ? ORDER_STATE.EXECUTING : ORDER_STATE.WAIT_EXECUTE;
+                logger.TraceLog($"AGVC |{agvc.EQName}| 執行任務-check-pt1 : {setOrderSuccess}");
+                if (setOrderSuccess && newExecuting.EExecuteType == EXECUTE_TYPE.Order)
+                    agvc.AddHostOrder(newExecuting);
+                return setOrderSuccess;
             }
-            else if (agvcType == AGVC_TYPES.GPM)
+            catch (Exception ex)
             {
-                setOrderSuccess = await ExecutingTransfer.TransferToGPM(newExecuting);
+                throw ex;
             }
-            newExecuting.State = setOrderSuccess ? ORDER_STATE.EXECUTING : ORDER_STATE.WAIT_EXECUTE;
-
-            if (setOrderSuccess && newExecuting.EExecuteType == EXECUTE_TYPE.Order)
-                agvc.AddHostOrder(newExecuting);
-            return setOrderSuccess;
-        }
-
-
-
-        private static void TaskStateFeedBack(IAGVS agvs, clsHostExecuting order)
-        {
-            if (order.State == ORDER_STATE.COMPLETE)
-            {
-
-            }
-            agvs.agvsApi.TaskStateFeedback(order);
         }
 
 

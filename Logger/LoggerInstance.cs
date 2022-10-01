@@ -6,20 +6,26 @@ using System.Threading.Tasks;
 
 namespace GPM_AGV_LAT_CORE.Logger
 {
-    internal class LoggerInstance : ILogger
+    public class LoggerInstance : ILogger
     {
-        private string className;
+        public static event EventHandler<LogItem> Onlogging;
+
+        protected string className;
 
         internal LoggerInstance(Type T)
         {
             className = T.Name;
+        }
+
+        internal LoggerInstance()
+        {
 
         }
 
         public void ErrorLog(string message, Exception ex)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            ConsoleWriteLine("Error", ex.StackTrace + $":{message}");
+            ConsoleWriteLine("Error", ex.Message + $":{message}");
         }
 
         public void ErrorLog(Exception ex)
@@ -40,7 +46,7 @@ namespace GPM_AGV_LAT_CORE.Logger
             ConsoleWriteLine("Fatal", ex.Message);
         }
 
-        public void InfoLog(string message)
+        virtual public void InfoLog(string message)
         {
             Console.ForegroundColor = ConsoleColor.Green;
             ConsoleWriteLine("Info", message);
@@ -58,9 +64,35 @@ namespace GPM_AGV_LAT_CORE.Logger
             ConsoleWriteLine("Warn", message);
         }
 
-        private void ConsoleWriteLine(string classify, object message)
+        virtual protected void ConsoleWriteLine(string classify, object message)
         {
-            Console.WriteLine("{0} | {1} | {2} |: {3}", DateTime.Now.ToString(), className, classify, message);
+            var logItem = new LogItem(DateTime.Now, className, classify, message.ToString());
+            Console.WriteLine("{0} | {1} | {2} |: {3}", logItem.Time, logItem.ClassName, logItem.Classify, logItem.Message);
+            Onlogging?.Invoke(this, logItem);
+        }
+
+
+
+
+        public class LogItem
+        {
+            public LogItem(DateTime time, string message)
+            {
+                Time = time;
+                Message = message;
+            }
+            public LogItem(DateTime time, string className, string classify, string message)
+            {
+                Time = time;
+                ClassName = className;
+                Classify = classify;
+                Message = message;
+            }
+
+            public DateTime Time { get; }
+            public string ClassName { get; }
+            public string Classify { get; }
+            public string Message { get; }
         }
     }
 }

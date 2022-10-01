@@ -2,6 +2,8 @@
 using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
 using GPM_AGV_LAT_CORE.AGVS.API;
 using GPM_AGV_LAT_CORE.AGVS.Models.KingAllant;
+using GPM_AGV_LAT_CORE.GPMMiddleware;
+using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
 using GPM_AGV_LAT_CORE.LATSystem;
 using GPM_AGV_LAT_CORE.Logger;
 using GPM_AGV_LAT_CORE.Parameters;
@@ -35,7 +37,10 @@ namespace GPM_AGV_LAT_CORE.AGVS
 
         public List<IAgvcInfoToAgvs> BindingAGVCInfoList { get; set; } = null;
         public string VenderName { get; set; } = "晶捷能";
+        public List<clsHostExecuting> ExecuteTaskList { get; set; } = new List<clsHostExecuting>();
+
         private ILogger logger;
+        private MessageHandShakeLogger mhsLogger = new MessageHandShakeLogger();
         public KingGallentAGVS()
         {
             logger = new LoggerInstance(GetType());
@@ -84,6 +89,7 @@ namespace GPM_AGV_LAT_CORE.AGVS
                 {
                     if (jsonStr == "" | jsonStr == null)
                         continue;
+                    mhsLogger.AGVSToLAT(jsonStr);
                     Dictionary<string, object> revObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonStr);
                     var headerdata = JsonConvert.DeserializeObject<Dictionary<string, object>>(revObj["Header"].ToString());
                     OnHostMessageReceived?.Invoke(this, revObj);
@@ -91,11 +97,12 @@ namespace GPM_AGV_LAT_CORE.AGVS
                     if (headerdata.ContainsKey("0301") | headerdata.ContainsKey("0305"))
                     {
                         logger.WarnLog($"AGVS Task Down..{jsonStr}");
-                        OnTaskDownloadRecieved?.Invoke(this, new clsHostExcutingState(_SocketStates, revObj));
+                        var taskExecutingState = new clsHostExcutingState(_SocketStates, revObj);
+                        OnTaskDownloadRecieved?.Invoke(this, taskExecutingState);
                     }
                     else
                     {
-                        logger.InfoLog($"AGVS Acknowleage : {jsonStr}");
+                        //logger.InfoLog($"AGVS Acknowleage : {jsonStr}");
                     }
 
                 }
@@ -115,7 +122,7 @@ namespace GPM_AGV_LAT_CORE.AGVS
             {
                 AGVStatus = (int)agvcState.States.ERunningState
             });
-            return _agvsApi.RunningStatusReport(reportObj);
+            return await _agvsApi.RunningStatusReport(reportObj);
         }
 
 
@@ -123,15 +130,14 @@ namespace GPM_AGV_LAT_CORE.AGVS
         {
             public TcpSocketClient socketClient { get; private set; }
             public dynamic executingObject { get; set; }
+            public ORDER_STATE state { get; set; } = ORDER_STATE.WAIT_EXECUTE;
+
             public clsHostExcutingState(SocketStates socketState, Dictionary<string, object> executingObject)
             {
                 this.socketClient = new TcpSocketClient();
-                this.socketClient.tcpClient = new System.Net.Sockets.TcpClient();
-                socketClient.tcpClient.Client = socketState.socket;
+                socketClient.socket = socketState.socket;
                 socketClient.socketState = socketState;
-
                 this.executingObject = executingObject;
-
             }
         }
     }

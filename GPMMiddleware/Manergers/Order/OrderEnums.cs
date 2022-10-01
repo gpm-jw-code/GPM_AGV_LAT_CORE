@@ -20,8 +20,13 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
         /// 已完成
         /// </summary>
         COMPLETE,
+        SUSPEND,
         STOPPED,
         FAILED,
-        ERROR
+        ERROR,
+        CANCELED,
+        NotFound,
+        OverTime,
+        StatusNone
     }
 }

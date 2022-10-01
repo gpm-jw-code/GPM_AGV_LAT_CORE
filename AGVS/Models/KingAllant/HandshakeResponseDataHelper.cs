@@ -37,24 +37,22 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             remoteObj = remoteTaskObj;
         }
 
-        public HandshakeResponseDataHelper(string remoteASCIIRev)
+        public HandshakeResponseDataHelper()
+        {
+
+        }
+
+        internal bool CreateTemplate(string Jsonstr)
         {
             try
             {
-                Jsonstr = remoteASCIIRev.Replace("*CR", "");
-                try
-                {
-                    remoteObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(Jsonstr);
-                }
-                catch (JsonSerializationException ex)
-                {
-                    logger.ErrorLog("HandshakeResponseDataHelper ||JsonSerializationException|| in construtor", ex);
-                    remoteObj = null;
-                }
+                remoteObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(Jsonstr);
+                return true;
             }
             catch (Exception ex)
             {
                 logger.ErrorLog("HandshakeResponseDataHelper Error occur in construtor", ex);
+                return false;
             }
         }
 

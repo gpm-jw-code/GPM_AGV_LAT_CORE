@@ -13,7 +13,7 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
     public class TcpSocketClient
     {
         public ILogger logger;
-        public TcpClient tcpClient { get; set; }
+        public Socket socket { get; set; }
         public string hostIP { get; }
         public int hostPort { get; }
 
@@ -37,10 +37,10 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
         {
             try
             {
-                tcpClient = new TcpClient();
-                tcpClient.Connect(hostIP, hostPort);
-                socketState.socket = tcpClient.Client;
-                tcpClient.Client.BeginReceive(socketState.buffer, 0, socketState.bufferSize, SocketFlags.None, new AsyncCallback(ReceieveCallBack), socketState);
+                socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.Connect(hostIP, hostPort);
+                socketState.socket = socket;
+                socket.BeginReceive(socketState.buffer, 0, socketState.bufferSize, SocketFlags.None, new AsyncCallback(ReceieveCallBack), socketState);
 
                 return true;
             }
@@ -54,10 +54,10 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
             errmsg = "";
             try
             {
-                tcpClient = new TcpClient();
-                tcpClient.Connect(hostIP, hostPort);
-                socketState.socket = tcpClient.Client;
-                tcpClient.Client.BeginReceive(socketState.buffer, 0, socketState.bufferSize, SocketFlags.None, new AsyncCallback(ReceieveCallBack), socketState);
+                socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.Connect(hostIP, hostPort);
+                socketState.socket = socket;
+                socket.BeginReceive(socketState.buffer, 0, socketState.bufferSize, SocketFlags.None, new AsyncCallback(ReceieveCallBack), socketState);
                 return true;
             }
             catch (Exception ex)
@@ -71,30 +71,41 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
 
         private void ReceieveCallBack(IAsyncResult ar)
         {
-            SocketStates _socketState = (SocketStates)ar.AsyncState;
-            int receieveLen = _socketState.socket.EndReceive(ar);
-            _socketState.receieveLen = receieveLen;
-            serverReplyState = _socketState;
-            serverReply.Set();
-            OnMessageReceive?.Invoke(this, _socketState);
-            _socketState.ClearBuffer();
-            tcpClient.Client.BeginReceive(_socketState.buffer, 0, _socketState.bufferSize, SocketFlags.None, ReceieveCallBack, _socketState);
+            try
+            {
+                SocketStates _socketState = (SocketStates)ar.AsyncState;
+                int receieveLen = _socketState.socket.EndReceive(ar);
+                _socketState.receieveLen = receieveLen;
+                serverReplyState = _socketState;
+                serverReply.Set();
+                OnMessageReceive?.Invoke(this, _socketState);
+                _socketState.ClearBuffer();
+                socket.BeginReceive(_socketState.buffer, 0, _socketState.bufferSize, SocketFlags.None, ReceieveCallBack, _socketState);
+
+            }
+            catch (Exception ex)
+            {
+
+            }
         }
 
-
-        internal SocketStates Send(string data, bool waitReply)
+        internal async Task<SocketStates> Send(byte[] data, bool waitReply)
         {
-            return Send(Encoding.ASCII.GetBytes(data), waitReply);
-            //tcpClient.Client.Send(,);
-        }
-
-        internal SocketStates Send(byte[] data, bool waitReply)
-        {
-            serverReply.Reset();
-            tcpClient.Client.Send(data, data.Length, SocketFlags.None);
-            if (waitReply)
-                serverReply.WaitOne();
-            return serverReplyState;
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    serverReply.Reset();
+                    socket.Send(data, data.Length, SocketFlags.None);
+                    if (waitReply)
+                        serverReply.WaitOne();
+                    return serverReplyState;
+                }
+                catch (Exception)
+                {
+                    return new SocketStates();
+                }
+            });
         }
 
     }

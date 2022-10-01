@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static GPM_AGV_LAT_CORE.AGVC.AGVCStates.MapState;
 
 namespace GPM_AGV_LAT_CORE.AGVC
 {
@@ -74,12 +75,24 @@ namespace GPM_AGV_LAT_CORE.AGVC
             agvcStates.States.EConnectionState = CONNECTION_STATE.CONNECTING;
             bool connected = ConnectoAGVInstance();
             if (connected)
+            {
+                agvcStates.MapStates.currentMapInfo = LoadMapStationStored().Result;
                 CheckOnlineStateFromAGVSRequest?.Invoke(this, this);
-
+            }
             if (agvcStates.States.EOnlineState != ONLINE_STATE.ONLINE)
                 OnlineOfflineRequest?.Invoke(this, new OnOffLineRequest(this, ONLINE_STATE.ONLINE));
             agvcStates.States.EConnectionState = connected ? CONNECTION_STATE.CONNECTED : CONNECTION_STATE.DISCONNECT;
             return connected;
+        }
+
+        virtual public List<string> GetMapNames()
+        {
+            throw new NotImplementedException();
+        }
+
+        virtual protected Task<MapInfo> LoadMapStationStored()
+        {
+            throw new NotImplementedException();
         }
 
         virtual protected bool ConnectoAGVInstance()
@@ -141,11 +154,30 @@ namespace GPM_AGV_LAT_CORE.AGVC
 
         virtual protected Task SyncSyncOrderExecuteStateInstance()
         {
-            bool anyTaskExecute = orderList_LAT.Any(order => order.State == ORDER_STATE.EXECUTING);
+
+            var excutingOrder = orderList_LAT.FirstOrDefault(order => order.State == ORDER_STATE.EXECUTING);
+            bool anyTaskExecute = excutingOrder != null;
+
+            agvcStates.MapStates.navigationState.IsNavigating = anyTaskExecute;
+
             if (anyTaskExecute)
+            {
                 agvcStates.States.ERunningState = RUNNING_STATE.RUNNING;
+                agvcStates.MapStates.navigationState.targetStationID = excutingOrder.latOrderDetail.action.stationID;
+                agvcStates.MapStates.navigationState.pathStations= excutingOrder.latOrderDetail.action.paths;
+
+                var nextOrder = orderList_LAT.FirstOrDefault(order => order.State == ORDER_STATE.WAIT_EXECUTE);
+                if (nextOrder != null)
+                    agvcStates.MapStates.navigationState.nextStationID = nextOrder.latOrderDetail.action.stationID;
+                else
+                    agvcStates.MapStates.navigationState.nextStationID = "";
+
+            }
             else
+            {
+                agvcStates.MapStates.navigationState.targetStationID = agvcStates.MapStates.navigationState.nextStationID = "";
                 agvcStates.States.ERunningState = RUNNING_STATE.IDLE;
+            }
 
             return Task.CompletedTask;
         }
@@ -163,19 +195,26 @@ namespace GPM_AGV_LAT_CORE.AGVC
         virtual public void AddHostOrder(clsHostExecuting order)
         {
             orderList_LAT.Add(order);
-            //模擬
-            Task.Run(async () =>
-            {
-                order.State = ORDER_STATE.EXECUTING;
-                await Task.Delay(TimeSpan.FromSeconds(5));
-                order.State = ORDER_STATE.COMPLETE;
-            });
         }
 
         public void AGVCDataConvertToLATFormat(object agvcData)
         {
         }
 
+        virtual public Task<ORDER_STATE> TaskStateDownload(string taskName)
+        {
+            throw new NotImplementedException();
+        }
+
+        virtual public Task<object> GetNativeAlarmState()
+        {
+            throw new NotImplementedException();
+        }
+
+        virtual public AlarmStates GetLatAlarm(object nativeAlarm)
+        {
+            throw new NotImplementedException();
+        }
 
         public class OnOffLineRequest
         {

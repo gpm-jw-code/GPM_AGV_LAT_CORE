@@ -1,6 +1,8 @@
 ﻿using GPM_AGV_LAT_CORE.AGVC;
 using GPM_AGV_LAT_CORE.AGVC.AGVCInfo;
 using GPM_AGV_LAT_CORE.AGVS.API;
+using GPM_AGV_LAT_CORE.GPMMiddleware;
+using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
 using GPM_AGV_LAT_CORE.LATSystem;
 using GPM_AGV_LAT_CORE.Parameters;
 using System;
@@ -21,6 +23,8 @@ namespace GPM_AGV_LAT_CORE.AGVS
         public IAgvsHandShakeable agvsApi { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public List<IAgvcInfoToAgvs> BindingAGVCInfoList { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
+        public List<clsHostExecuting> ExecuteTaskList { get; set; } = new List<clsHostExecuting>();
+
         public event EventHandler<object> OnHostMessageReceived;
         public event EventHandler<IAGVSExecutingState> OnTaskDownloadRecieved;//<
 
@@ -39,7 +43,7 @@ namespace GPM_AGV_LAT_CORE.AGVS
         public class GPMExcutingState : IAGVSExecutingState
         {
             public dynamic executingObject { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
+            public ORDER_STATE state { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         }
     }
 }

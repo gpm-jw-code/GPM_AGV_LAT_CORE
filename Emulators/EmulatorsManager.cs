@@ -1,4 +1,5 @@
-﻿using GPM_AGV_LAT_CORE.Emulators.GangHao;
+﻿using GPM_AGV_LAT_CORE.AGVC;
+using GPM_AGV_LAT_CORE.Emulators.GangHao;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,27 +9,67 @@ using System.Threading.Tasks;
 
 namespace GPM_AGV_LAT_CORE.Emulators
 {
+
+    public class EmulationSetting
+    {
+        public AgvsParam AGVS { get; set; }
+        public List<AgvcParam> AGVCList { get; set; }
+
+    }
+
+    public class AgvcParam
+    {
+        public string IP { get; set; }
+        public int Port { get; set; }
+        public string ROS_BOT_URI { get; set; }
+    }
+
+    public class AgvsParam
+    {
+        public string IP { get; set; }
+        public int Port { get; set; }
+    }
+
+
     public static class EmulatorsManager
     {
-
-
-
-        public static KingGallentAgvsEmulator kingGallentAgvc = new KingGallentAgvsEmulator("127.0.0.1", 5500);
-
-
-        public static GangHaoAGVCEmulate[] gangHaoAgvcList = new GangHaoAGVCEmulate[2]
+        public struct AGVSSettings
         {
-             new GangHaoAGVCEmulate("192.168.0.104"),
-             new GangHaoAGVCEmulate("192.168.0.233"),
+            public static string IP = "127.0.0.1";
+            public static int Port = 5500;
+        }
+
+        public struct AGVCSettings
+        {
+            public static List<AgvcParam> AgvcList { get; set; }
+        }
+
+        public static KingGallentAgvsEmulator kingGallentAgvc = new KingGallentAgvsEmulator(AGVSSettings.IP, AGVSSettings.Port);
+        public static List<GangHaoAGVCEmulate> gangHaoAgvcList = new List<GangHaoAGVCEmulate>()
+        {
         };
 
-        internal static void Start()
+        /// <summary>
+        /// 僅啟動agvc模擬
+        /// </summary>
+        public static void StartAGVCEmuOnly()
+        {
+            gangHaoAgvcList = AGVCSettings.AgvcList.Select(acp => new GangHaoAGVCEmulate(acp.IP)).ToList();
+            foreach (var gangHaoEmulator in gangHaoAgvcList)
+                gangHaoEmulator.Start();
+        }
+        /// <summary>
+        /// 僅啟動agcs模擬
+        /// </summary>
+        public static void StartAGVSEmuOnly()
         {
             kingGallentAgvc.Start();
-            foreach (var gangHaoEmulator in gangHaoAgvcList)
-            {
-                gangHaoEmulator.Start();
-            }
+        }
+
+        public static void Start()
+        {
+            StartAGVCEmuOnly();
+            StartAGVSEmuOnly();
         }
 
         /// <summary>
@@ -50,7 +91,7 @@ namespace GPM_AGV_LAT_CORE.Emulators
                 IP = ip;
                 stateEmulator = new GangHaoAgvc_StateEmulator(ip, 19204);
                 controlEmulator = new GangHaoAgvc_ControlEmulator(ip, 19205);
-                mapEmulator = new GangHaoAgvc_MapEmulator(ip, 19206);
+                mapEmulator = new GangHaoAgvc_MapEmulator(ip, 19206, stateEmulator);
             }
             /// <summary>
             /// 狀態模擬
