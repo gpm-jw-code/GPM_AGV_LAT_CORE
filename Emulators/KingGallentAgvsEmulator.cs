@@ -20,7 +20,7 @@ namespace GPM_AGV_LAT_CORE.Emulators
         public Dictionary<string, AGVCSTate> DictAGVC = new Dictionary<string, AGVCSTate>()
         {
             {"AGV_001", new AGVCSTate("AGV_001","001:001:001") },
-            {"AGV_002", new AGVCSTate("AGV_002","002:002:002") },
+            {"AGV_002", new AGVCSTate("AGV_002","002:001:002") },
         };
 
         public KingGallentAgvsEmulator(string ip, int port)
@@ -37,7 +37,6 @@ namespace GPM_AGV_LAT_CORE.Emulators
             {
                 agv.OnTaskDownload += Agv_OnTaskDownload;
             }
-
 
             Task.Factory.StartNew(() =>
             {
@@ -139,7 +138,7 @@ namespace GPM_AGV_LAT_CORE.Emulators
                             {
                                 string ackJson = JsonConvert.SerializeObject(returnData);
                                 e.socket.Send(Encoding.ASCII.GetBytes(ackJson + "*CR"));
-                                logger.TraceLog($"AGVS Ack({headerCode}):{ackJson}");
+                                //logger.TraceLog($"AGVS Ack({headerCode}):{ackJson}");
                             }
                             catch (Exception ex)
                             {
@@ -217,6 +216,7 @@ namespace GPM_AGV_LAT_CORE.Emulators
             public Queue<OrderTask> waintingOrderLinks { get; private set; } = new Queue<OrderTask>();
 
             private ManualResetEvent OrderTaskResetEvent = new ManualResetEvent(false);
+            private CancellationTokenSource NavigatingCancelTokenSource = new CancellationTokenSource();
 
             internal OrderResult NewOrder(OrderTask order, bool waitOtherTaskFinish)
             {
@@ -233,35 +233,53 @@ namespace GPM_AGV_LAT_CORE.Emulators
 
             private async Task OrderLinkRun(OrderTask order)
             {
+                NavigatingCancelTokenSource = new CancellationTokenSource();
                 ExecutingOrder = order;
+
                 await Task.Factory.StartNew(async () =>
                 {
-                    while (order.StationsQueue.Count != 0)
+                    try
                     {
-                        OrderTaskResetEvent.Reset();//封鎖
-                        OrderTask.StationInfo station = order.StationsQueue.Dequeue();
-                        ExecutingTaskName = order.TaskID + $"station-{station.stationID}";
-                        OnTaskDownload?.Invoke(this, new TaskDownObject { SID = this.SID, EQName = this.EQName, taskName = ExecutingTaskName, stationID = station.stationID });
-                        OrderTaskResetEvent.WaitOne();
+                        while (order.StationsQueue.Count != 0)
+                        {
+                            OrderTaskResetEvent.Reset();//封鎖
+
+                            OrderTask.StationInfo station = order.StationsQueue.Dequeue();
+                            ExecutingTaskName = order.TaskID + $"station-{station.stationID}";
+                            OnTaskDownload?.Invoke(this, new TaskDownObject { SID = this.SID, EQName = this.EQName, taskName = ExecutingTaskName, stationID = station.stationID });
+                            OrderTaskResetEvent.WaitOne();
+
+                        }
+
+                        ExecutingOrder = null;
+                        ExecutingTaskName = null;
+
+                        if (waintingOrderLinks.Count != 0)
+                        {
+                            OrderTask nextExecuting = waintingOrderLinks.Dequeue();
+                            Task.Factory.StartNew(() => OrderLinkRun(nextExecuting));
+                        }
                     }
-                    ExecutingOrder = null;
-                    ExecutingTaskName = null;
-
-
-
-                    if (waintingOrderLinks.Count != 0)
+                    catch (Exception ex)
                     {
-                        OrderTask nextExecuting = waintingOrderLinks.Dequeue();
-                        Task.Factory.StartNew(() => OrderLinkRun(nextExecuting));
+                        Console.WriteLine(ex.Message);
                     }
 
-                });
+
+                }, NavigatingCancelTokenSource.Token);
 
             }
 
             internal void SetWorkFlowResume()
             {
                 OrderTaskResetEvent.Set();
+            }
+
+            internal void CancelNavigating()
+            {
+                waintingOrderLinks.Clear();
+                ExecutingOrder?.StationsQueue.Clear();
+                NavigatingCancelTokenSource.Cancel();
             }
         }
 
@@ -291,6 +309,7 @@ namespace GPM_AGV_LAT_CORE.Emulators
                 return;
             }
             HandshakeRunningStatusReportHelper requestHelper = new HandshakeRunningStatusReportHelper(SID, EQName);
+            DictAGVC[EQName].CancelNavigating();
             Send(client, requestHelper.CreateAGVSResetExcute(ResetMode));
         }
 

@@ -21,6 +21,10 @@ namespace GPM_AGV_LAT_CORE.Logger
         {
 
         }
+        internal LoggerInstance(string className)
+        {
+            this.className = className;
+        }
 
         public void ErrorLog(string message, Exception ex)
         {

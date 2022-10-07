@@ -162,7 +162,7 @@
     <Compile Include="GPMMiddleware\Manergers\Order\OrderEnums.cs" />
     <Compile Include="GPMMiddleware\TaskOrderStateTrack.cs" />
     <Compile Include="GPMMiddleware\TrafficControl\CrossStation.cs" />
-    <Compile Include="GPMMiddleware\TrafficControl\TrafficController.cs" />
+    <Compile Include="GPMMiddleware\TrafficControl\TrafficControlCenter.cs" />
     <Compile Include="LATSystem\Dispatch\AgvcDisPatcher.cs" />
     <Compile Include="LATSystem\TYPES.cs" />
     <Compile Include="LATSystem\SystemParams.cs" />

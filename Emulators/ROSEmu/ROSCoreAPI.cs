@@ -34,6 +34,16 @@ namespace GPM_AGV_LAT_CORE.Emulators.ROSEmu
             await HttpPost("/NavigatorUseTargetList", stationIDList);
         }
 
+        internal async Task PauseNavigate()
+        {
+            await HttpPost("/PauseNavigate");
+        }
+
+        internal async Task ResumeNavigate()
+        {
+            await HttpPost("/ResumeNavigate");
+        }
+
         internal async Task<robotStatusTaskRes_11020> GetNavigatingState()
         {
             var res = await HttpGet($"/NavigatingState");
@@ -44,6 +54,12 @@ namespace GPM_AGV_LAT_CORE.Emulators.ROSEmu
                 };
             var navigatState = JsonConvert.DeserializeObject<robotStatusTaskRes_11020>(res);
             return navigatState;
+        }
+
+        internal async Task CancelNavigating()
+        {
+            var response = await HttpPost("/CancleNavigatingTask");
+            Console.WriteLine(response);
         }
 
         internal async Task<double[]> GetCurrentPosition()
@@ -119,7 +135,6 @@ namespace GPM_AGV_LAT_CORE.Emulators.ROSEmu
                 {
                     var result = await client.PostAsync(uri, content);
                     var statusCode = result.StatusCode;
-
                     responseJsonstr = await result.Content.ReadAsStringAsync();
                 }
                 return responseJsonstr;

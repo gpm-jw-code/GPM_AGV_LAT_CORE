@@ -105,7 +105,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
         {
             while (true)
             {
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromMilliseconds(200));
                 try
                 {
                     await SyncStateInstance();
@@ -164,7 +164,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
             {
                 agvcStates.States.ERunningState = RUNNING_STATE.RUNNING;
                 agvcStates.MapStates.navigationState.targetStationID = excutingOrder.latOrderDetail.action.stationID;
-                agvcStates.MapStates.navigationState.pathStations= excutingOrder.latOrderDetail.action.paths;
+                agvcStates.MapStates.navigationState.pathStations = excutingOrder.latOrderDetail.action.paths;
 
                 var nextOrder = orderList_LAT.FirstOrDefault(order => order.State == ORDER_STATE.WAIT_EXECUTE);
                 if (nextOrder != null)
@@ -212,6 +212,16 @@ namespace GPM_AGV_LAT_CORE.AGVC
         }
 
         virtual public AlarmStates GetLatAlarm(object nativeAlarm)
+        {
+            throw new NotImplementedException();
+        }
+
+        virtual public Task PauseNavigate()
+        {
+            throw new NotImplementedException();
+        }
+
+        virtual public Task ResumeNavigate()
         {
             throw new NotImplementedException();
         }

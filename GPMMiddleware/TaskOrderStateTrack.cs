@@ -1,6 +1,7 @@
 ﻿using GPM_AGV_LAT_CORE.AGVC;
 using GPM_AGV_LAT_CORE.AGVS;
 using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
+using GPM_AGV_LAT_CORE.GPMMiddleware.TrafficControl;
 using GPM_AGV_LAT_CORE.Logger;
 using System;
 using System.Collections.Generic;
@@ -43,7 +44,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                     if (_preState != state)
                     {
                         logger.InfoLog($"Order:{task_id}:State Change , Current State={state}");
-                        Agvs.agvsApi.TaskStateFeedback(NewExecuting);
+                        Agvs.agvsApi.ReportNagivateTaskState(NewExecuting);
                     }
                     _preState = state;
                     if (state == ORDER_STATE.COMPLETE)
@@ -51,7 +52,14 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                         break;
                     }
                 }
+
+
                 Agvc.agvcStates.MapStates.currentStationID = NewExecuting.latOrderDetail.action.stationID;
+                Agvc.agvcStates.MapStates.navigationState.pathStations.Clear();
+                Agvc.agvcStates.MapStates.navigationState.IsNavigating = false;
+
+                TrafficControlCenter.Remove(Agvc);
+
                 logger.InfoLog($"Order:{task_id}:Mission Completed ! ");
             });
         }

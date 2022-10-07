@@ -13,6 +13,8 @@ using GPM_AGV_LAT_CORE.AGVS.API;
 using GPM_AGV_LAT_CORE.LATSystem;
 using GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor;
 using GPM_AGV_LAT_CORE.Logger;
+using GPM_AGV_LAT_CORE.GPMMiddleware.TrafficControl;
+using GangHaoAGV.AGV;
 
 namespace GPM_AGV_LAT_CORE.GPMMiddleware
 {
@@ -21,6 +23,8 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
     /// </summary>
     internal partial class AgvsHandler
     {
+
+
         static ILogger logger = new LoggerInstance(typeof(AgvsHandler));
         /// <summary>
         /// 處理晶捷能派車平台任務下載
@@ -66,31 +70,43 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                 newExecuting = OrderManerger.NewOrderJoin(newExecuting);
                 //newExecuting.PropertyChanged += (order, e) => agvs.agvsApi.TaskStateFeedback(order as clsHostExecuting); ;
             }
-            bool setOrderSuccess = await TransferExecutingToAGVC(agvc, newExecuting);
+            var transferResult = await TransferExecutingToAGVC(agvc, newExecuting);
 
-            logger.TraceLog($"AGVC |{agvc.EQName}| 執行任務? : {setOrderSuccess}");
-            executingState.state = newExecuting.State = setOrderSuccess ? ORDER_STATE.EXECUTING : ORDER_STATE.WAIT_EXECUTE;
-            ExecutingResultReport(agvs, agvc, executeType, setOrderSuccess, executingState);
+            executingState.state = newExecuting.State = transferResult.Success ? ORDER_STATE.EXECUTING : ORDER_STATE.WAIT_EXECUTE;
+
+            ExecutingResultReport(agvs, agvc, executeType, transferResult.Success);
+
             TaskOrderStateTrack orderStateTracker = new TaskOrderStateTrack(agvs, agvc, newExecuting);
 
-            if (setOrderSuccess)
-                orderStateTracker.StartTrack();
+            if (transferResult.Success)
+            {
+                if (newExecuting.EExecuteType == EXECUTE_TYPE.Order)
+                {
+
+                    TrafficControlCenter.JoinTrafficSystem(agvc, newExecuting.latOrderDetail.action.paths);
+                    orderStateTracker.StartTrack();
+                }
+            }
+            else
+            {
+                logger.WarnLog($"任務發派失敗:{transferResult.ErrMessage}");
+            }
         }
 
 
         /// <summary>
-        /// 回報
+        /// 回報任務
         /// </summary>
         /// <param name="agvs"></param>
         /// <param name="agvc"></param>
         /// <param name="executeType"></param>
         /// <param name="setOrderSuccess"></param>
-        private static void ExecutingResultReport(IAGVS agvs, IAGVC agvc, EXECUTE_TYPE executeType, bool setOrderSuccess, IAGVSExecutingState executingState)
+        private static void ExecutingResultReport(IAGVS agvs, IAGVC agvc, EXECUTE_TYPE executeType, bool setOrderSuccess, IAGVSExecutingState executingState = null)
         {
             if (executeType == EXECUTE_TYPE.Order)
-                agvs.agvsApi.TaskDownloadReport(agvc, setOrderSuccess, executingState);
+                agvs.agvsApi.ReportTaskDownloadResult(agvc, setOrderSuccess, executingState);
             else if (executeType == EXECUTE_TYPE.Reset)
-                agvs.agvsApi.ResetReport(agvc, setOrderSuccess, executingState);
+                agvs.agvsApi.ReportNagivateResetExecuteResult(agvc, setOrderSuccess, executingState);
         }
 
 
@@ -101,17 +117,21 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
         /// <param name="agvc"></param>
         /// <param name="newExecuting"></param>
         /// <returns></returns>
-        private static async Task<bool> TransferExecutingToAGVC(IAGVC agvc, clsHostExecuting newExecuting)
+        private static async Task<TransferResult> TransferExecutingToAGVC(IAGVC agvc, clsHostExecuting newExecuting)
         {
             try
             {
                 bool setOrderSuccess = false;
+                string message = "";
                 AGVC_TYPES agvcType = agvc.agvcType;
                 if (agvcType == AGVC_TYPES.GangHau)
                 {
-                    GangHaoAGV.AGV.clsMap.MapReqResult res = await ExecutingTransfer.TransferToGangHao(newExecuting);
+                    clsMap.NavigateReqResult res = await ExecutingTransfer.TransferToGangHao(newExecuting);
                     setOrderSuccess = res.Success;
-                    newExecuting.latOrderDetail.action.paths = res.Path.ToList();
+                    message = res.ErrMsg;
+
+                    if (newExecuting.EExecuteType == EXECUTE_TYPE.Order)
+                        newExecuting.latOrderDetail.action.paths = res.Path?.ToList();
                 }
                 else if (agvcType == AGVC_TYPES.GPM)
                 {
@@ -122,15 +142,31 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                 logger.TraceLog($"AGVC |{agvc.EQName}| 執行任務-check-pt1 : {setOrderSuccess}");
                 if (setOrderSuccess && newExecuting.EExecuteType == EXECUTE_TYPE.Order)
                     agvc.AddHostOrder(newExecuting);
-                return setOrderSuccess;
+                return new TransferResult(setOrderSuccess)
+                {
+                    ErrMessage = message
+                };
             }
             catch (Exception ex)
             {
-                throw ex;
+                return new TransferResult(false)
+                {
+                    ErrMessage = $"Code Error : {ex.Message}"
+                };
             }
         }
 
 
 
+    }
+
+    public class TransferResult
+    {
+        public TransferResult(bool Success)
+        {
+            this.Success = Success;
+        }
+        public bool Success { get; set; }
+        public string ErrMessage { get; set; }
     }
 }

@@ -170,8 +170,8 @@ namespace GPM_AGV_LAT_CORE.Emulators.GangHao
 
                 ProtocolData protocolData = ProtocolDataParse(revBytes);
 
-                if (protocolData.jsonData != "" && protocolData.jsonData != null)
-                    logger.TraceLog($"{protocolData.cmdType}:{protocolData.jsonData}");
+                //if (protocolData.jsonData != "" && protocolData.jsonData != null)
+                //    logger.TraceLog($"{protocolData.cmdType}:{protocolData.jsonData}");
 
                 byte[] cmdTypeNoBytes = new byte[2] { revBytes[9], revBytes[8] };
                 int cmbTypeNo = BitConverter.ToInt16(cmdTypeNoBytes, 0);

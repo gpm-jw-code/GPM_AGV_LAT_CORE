@@ -91,6 +91,18 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// </summary>
         Task SyncSyncOrderExecuteState();
 
+        /// <summary>
+        /// 暫停導航
+        /// </summary>
+        /// <returns></returns>
+        Task PauseNavigate();
+
+        /// <summary>
+        /// 繼續導航
+        /// </summary>
+        /// <returns></returns>
+        Task ResumeNavigate();
+
         Task<ORDER_STATE> TaskStateDownload(string taskName);
         /// <summary>
         /// 將訂單加入列表

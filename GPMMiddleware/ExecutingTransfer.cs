@@ -22,10 +22,10 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
             /// </summary>
             /// <param name="newExecuting"></param>
             /// <returns></returns>
-            internal static async Task<MapReqResult> TransferToGangHao(clsHostExecuting newExecuting)
+            internal static async Task<NavigateReqResult> TransferToGangHao(clsHostExecuting newExecuting)
             {
                 GangHaoAGVC haoAGVC = (GangHaoAGVC)newExecuting.ExecutingAGVC;
-                MapReqResult response = null;
+                NavigateReqResult response = null;
                 var ExecuteType = newExecuting.EExecuteType;
 
                 if (ExecuteType == ExcutingPreProcessor.EXECUTE_TYPE.Order)
@@ -38,7 +38,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                 }
                 else if (ExecuteType == ExcutingPreProcessor.EXECUTE_TYPE.Reset)
                 {
-                    response = new MapReqResult();
+                    response = new NavigateReqResult();
                     response.Success = await haoAGVC.AGVInterface.NAVIGATIOR.TaskCancel();
                 }
 

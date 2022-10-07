@@ -14,13 +14,19 @@ namespace GPM_AGV_LAT_CORE.AGVC
     public class AGVCManager
     {
         /// <summary>
-        /// Key: AGV廠商 Value: AGV列表
+        ///  AGV列表
         /// </summary>
         public static List<IAGVC> AGVCList = new List<IAGVC>()
         {
            new GangHaoAGVC() {ID="0001",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.104"} }},
            new GangHaoAGVC() {ID="0002",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.107"} }},
         };
+
+
+        internal static List<IAGVC> GetNavigatingAGVCs()
+        {
+            return AGVCList.FindAll(agv => agv.agvcStates.MapStates.navigationState.IsNavigating);
+        }
 
 
         /// <summary>
@@ -60,13 +66,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
             if (agvc.agvcType == AGVC_TYPES.GangHau)
             {
                 GangHaoAGVC gagvc = agvc as GangHaoAGVC;
-                var api = gagvc.AGVInterface.STATES.API;
-                var status = await api.GetRobotStatusInfo();
-                await Task.Delay(TimeSpan.FromMilliseconds(400));
-                var battery = await api.GetRobotBattery();
-                data.status = status;
-                data.battery = battery;
-                return data;
+                return gagvc.AGVInterface.STATES.NativeDatas;
             }
 
 
@@ -75,7 +75,12 @@ namespace GPM_AGV_LAT_CORE.AGVC
 
         }
 
-        public static async Task<object> getAlarmStateByEqName(string eqName)
+        internal static List<IAGVC> FindAGVCByCurrentPathIncludeStation(string stationID)
+        {
+            return AGVCList.FindAll(agv => agv.agvcStates.MapStates.navigationState.IsNavigating && agv.orderList_LAT.Last().latOrderDetail.action.paths.Contains(stationID));
+        }
+
+        public static async Task<object> GetAlarmStateByEqName(string eqName)
         {
             IAGVC agvc = GetAGVCByEqName(eqName);
             return await agvc.GetNativeAlarmState();
@@ -95,6 +100,8 @@ namespace GPM_AGV_LAT_CORE.AGVC
             }
             return mapNameList.Distinct().ToList();
         }
+
+
 
         /// <summary>
         /// 與所有的AGV車連線喔
@@ -151,7 +158,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
                 Console.WriteLine("找不到任何車屬於晶捷能派車系統");
                 return null;
             }
-            var agvc = agcList.FirstOrDefault(agv => ((AgvcInfoForKingAllant)agv.agvcInfos).EQName== SID);
+            var agvc = agcList.FirstOrDefault(agv => ((AgvcInfoForKingAllant)agv.agvcInfos).EQName == SID);
             if (agvc == null)
             {
                 Console.WriteLine("找不到任何車SID為{0}", SID);

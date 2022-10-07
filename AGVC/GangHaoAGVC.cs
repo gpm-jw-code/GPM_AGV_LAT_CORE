@@ -82,7 +82,19 @@ namespace GPM_AGV_LAT_CORE.AGVC
             agvcStates.MapStates.globalCoordinate.y = AGVInterface.STATES.locationInfo.y;
             agvcStates.MapStates.globalCoordinate.r = AGVInterface.STATES.locationInfo.angle;
 
-            robotStatusAlarmRes_11050 alarms = (robotStatusAlarmRes_11050)await GetNativeAlarmState();
+            agvcStates.MapStates.currentMapInfo.name = AGVInterface.STATES.mapLoadInfo.current_map;
+            agvcStates.MapStates.currentMapInfo.stations = AGVInterface.STATES.stationLoadInfo.stations.Select(st => new StationInfo()
+            {
+                desc = st.desc,
+                id = st.id,
+                r = st.r,
+                x = st.x,
+                y = st.y,
+                type = st.type,
+
+            }).ToList();
+
+            robotStatusAlarmRes_11050 alarms = AGVInterface.STATES.alarms;
             agvcStates.AlarmState.Update(GetLatAlarm(alarms));
         }
 
@@ -169,6 +181,14 @@ namespace GPM_AGV_LAT_CORE.AGVC
             return await AGVInterface.STATES.API.GetAlarms();
         }
 
+        public override async Task PauseNavigate()
+        {
+            await AGVInterface.NAVIGATIOR.PauseNavigate();
+        }
+        public override async Task ResumeNavigate()
+        {
+            await AGVInterface.NAVIGATIOR.ResumeNavigate();
+        }
         private ORDER_STATE GangHaoStatusToLATStates(int gangHaoStatus)
         {
             switch (gangHaoStatus)

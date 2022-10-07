@@ -36,7 +36,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
         }
 
 
-        public async Task TaskDownloadReport(IAGVC agvc, bool success, IAGVSExecutingState executingState)
+        public async Task ReportTaskDownloadResult(IAGVC agvc, bool success, IAGVSExecutingState executingState = null)
         {
             AgvcInfoForKingAllant agvcInfo = (AgvcInfoForKingAllant)agvc.agvcInfos;
             Dictionary<string, object> taskDownloadReply = CreateModelBase(agvc);
@@ -50,7 +50,9 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
             };
             await AckMessageSendOut(JsonConvert.SerializeObject(taskDownloadReply));
         }
-        public void ResetReport(IAGVC agvc, bool success, IAGVSExecutingState executingState)
+
+
+        public void ReportNagivateResetExecuteResult(IAGVC agvc, bool success, IAGVSExecutingState executingState = null)
         {
             Dictionary<string, object> taskDownloadReply = CreateModelBase(agvc);
             taskDownloadReply["Header"] = new Dictionary<string, object>()
@@ -66,7 +68,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
 
         }
 
-        public void TaskStateFeedback(clsHostExecuting order)
+        public void ReportNagivateTaskState(clsHostExecuting order)
         {
             var agvcInfo = order.ExecuteingAGVCInfo.agvcInfoForagvs as AgvcInfoForKingAllant;
             Dictionary<string, object> taskDownloadReply = CreateModelBase(agvcInfo);

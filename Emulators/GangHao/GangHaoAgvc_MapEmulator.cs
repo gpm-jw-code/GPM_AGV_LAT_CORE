@@ -26,6 +26,37 @@ namespace GPM_AGV_LAT_CORE.Emulators.GangHao
         {
             ResModelBase replyData = null;
             int cmbTypeNo = data.cmdType;
+
+            if (cmbTypeNo == 3001)
+            {
+                await rosAPI.PauseNavigate();
+                replyData = new ResModelBase(3001)
+                {
+                    create_on = DateTime.Now.ToString("yyyyMMdd HH:mm:ss"),
+                    ret_code = 0,
+                };
+            }
+
+            if (cmbTypeNo == 3002)
+            {
+                await rosAPI.ResumeNavigate();
+                replyData = new ResModelBase(3002)
+                {
+                    create_on = DateTime.Now.ToString("yyyyMMdd HH:mm:ss"),
+                    ret_code = 0,
+                };
+            }
+
+            if (cmbTypeNo == 3003)
+            {
+                await rosAPI.CancelNavigating();
+                replyData = new robotMapTaskGoTargetRes_13003()
+                {
+                    ret_code = 0,
+                    create_on = DateTime.Now.ToString("yyyyMMdd HH:mm:ss"),
+                };
+            }
+
             if (cmbTypeNo == 3051)
             {
                 stateEmu.AddNewMapReqStates(data.jsonData);

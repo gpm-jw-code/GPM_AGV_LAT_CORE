@@ -38,9 +38,17 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
 
         internal static void CheckOnlineStateHandler(object sender, IAGVC agvc)
         {
-            var onlineState = agvc.agvsBinding.agvsApi.DownloadAgvcOnlineState(agvc).Result;
-            logger.InfoLog($"agvc-{agvc.EQName} online State download result : {onlineState}");
-            agvc.agvcStates.States.EOnlineState = onlineState;
+            try
+            {
+                var onlineState = agvc.agvsBinding.agvsApi.DownloadAgvcOnlineState(agvc).Result;
+                logger.InfoLog($"agvc-{agvc.EQName} online State download result : {onlineState}");
+                agvc.agvcStates.States.EOnlineState = onlineState;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
         }
 
         /// <summary>

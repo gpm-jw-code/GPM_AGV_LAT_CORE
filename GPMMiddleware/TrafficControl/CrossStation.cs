@@ -1,4 +1,5 @@
 ﻿using GPM_AGV_LAT_CORE.AGVC;
+using GPM_AGV_LAT_CORE.Logger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,86 +10,242 @@ using static GPM_AGV_LAT_CORE.AGVC.AGVCStates.MapState;
 
 namespace GPM_AGV_LAT_CORE.GPMMiddleware.TrafficControl
 {
-    internal class CrossStation
+    public class CrossStation
     {
-        internal CrossStation(string id, double x, double y)
-        {
-            this.id = id;
-            this.x = x;
-            this.y = y;
-            Task.Run(() => Monitor());
-        }
 
-        private async Task Monitor()
-        {
-            while (true)
-            {
-                await Task.Delay(10);
+        ILogger logger;
 
-                foreach (var item in nonPassedAgvcList)
-                {
-                    item.distance = Distance(item.agvc.agvcStates.MapStates.globalCoordinate);
-                }
-
-                closestAgvc = nonPassedAgvcList.OrderBy(x => x.distance).ToList().First();
-                inControlRadiusAgvcList = nonPassedAgvcList.FindAll(a => a.distance < controlRadius);
-
-                if (inControlRadiusAgvcList.Count > 1)
-                {
-                    var agvcsToPause = inControlRadiusAgvcList.FindAll(a => a.agvc != closestAgvc).Select(a => a.agvc).ToList();
-                    //除了最接近交叉路口的AGVC以外，全部都給我暫停導航
-                    PauseNavigate(agvcsToPause);
-                    ResumeNavigate(agvcsToPause);
-                    //等待最接近的那台通過之後 繼續導航
-                }
-            }
-        }
-
-        internal string id { get; set; }
-        internal double x { get; set; }
-        internal double y { get; set; }
+        public string id { get; set; }
+        public double x { get; set; }
+        public double y { get; set; }
         /// <summary>
         /// 管制半徑距離
         /// </summary>
-        internal double controlRadius { get; set; } = 0.5;
+        public double controlRadius { get; set; } = 0.5;
         /// <summary>
         /// 已經過的AGV
         /// </summary>
-        internal List<AGVCDistanceInfo> passedAgvcList { get; set; } = new List<AGVCDistanceInfo>();
+        public List<AGVCDistanceInfo> passedAgvcList
+        {
+            get
+            {
+                return inControlingAgvcList.Values.ToList().FindAll(s => s.pose_state == AGVCDistanceInfo.POSE_STATE.AWAY);
+            }
+        }
         /// <summary>
         /// 尚未經過的AGV
         /// </summary>
-        internal List<AGVCDistanceInfo> nonPassedAgvcList { get; set; } = new List<AGVCDistanceInfo>();
+        public List<AGVCDistanceInfo> nonPassedAgvcList
+        {
+            get
+            {
+                return inControlingAgvcList.Values.ToList().FindAll(s => s.pose_state != AGVCDistanceInfo.POSE_STATE.AWAY);
+            }
+        }
 
-        internal List<AGVCDistanceInfo> inControlRadiusAgvcList { get; set; } = new List<AGVCDistanceInfo>();
+        public List<AGVCDistanceInfo> inControlRadiusAgvcList
+        {
+            get
+            {
+                return inControlingAgvcList.Values.ToList().FindAll(s => s.distance <= controlRadius);
+
+            }
+        }
+
+        public List<AGVCDistanceInfo> inControlingAgvcStateList => inControlingAgvcList.Values.ToList();
+
+        internal Dictionary<IAGVC, AGVCDistanceInfo> inControlingAgvcList { get; set; } = new Dictionary<IAGVC, AGVCDistanceInfo>();
         /// <summary>
         /// 距離該點最近的AGVC
         /// </summary>
-        internal AGVCDistanceInfo closestAgvc;
+        public AGVCDistanceInfo closestAgvc
+        {
+            get
+            {
+                if (inControlRadiusAgvcList.Count == 0)
+                    return null;
+                return inControlRadiusAgvcList.OrderBy(s => s.distance).First();
+            }
+        }
 
         private ManualResetEvent closestAGVPassEvent;
 
 
-        private void ResumeNavigate(List<IAGVC> agvcToPauseList)
+        public CrossStation(string id, double x, double y)
         {
-
+            this.id = id;
+            this.x = x;
+            this.y = y;
+            logger = new LoggerInstance($"{typeof(CrossStation)}-{id}");
         }
-        private void PauseNavigate(List<IAGVC> agvcToPauseList)
+
+
+
+        public void StartMonitor()
+        {
+            Task.Run(() => DistanceUpdating());
+            Task.Run(() => ControlTraffic());
+        }
+
+        private async Task ControlTraffic()
+        {
+            while (true)
+            {
+                await Task.Delay(1);
+
+                if (inControlingAgvcList.Count == 0)
+                    break;
+
+                try
+                {
+                    if (inControlRadiusAgvcList.Count < 2)
+                    {
+                        continue;
+                    }
+
+                    while (inControlRadiusAgvcList.Count > 0)
+                    {
+                        await Task.Delay(100);
+                        try
+                        {
+                            var _closestAgvc = closestAgvc;
+
+                            PauseNavigate(inControlRadiusAgvcList.FindAll(a => a.agvc_name != _closestAgvc.agvc_name).Select(a => a.agvc).ToList());
+                            ///最接近站點的通過
+                            ResumeNavigate(new List<IAGVC> { _closestAgvc.agvc });
+
+                            ///等待通過
+                            while (_closestAgvc.distance <= controlRadius) //還在管制區=>內等待直到脫離管制區
+                            {
+                                await Task.Delay(10);
+                            }
+                            logger.TraceLog($"AGVC({_closestAgvc.agvc.EQName}) far away control region");
+                        }
+                        catch (Exception ex)
+                        {
+                            break;
+                        }
+
+                    }
+
+                }
+                catch (Exception ex)
+                {
+
+                }
+            }
+        }
+
+        private async Task DistanceUpdating()
+        {
+            while (true)
+            {
+                await Task.Delay(10);
+                UpdatingAGVCDistance();
+                if (inControlingAgvcList.Count == 0)
+                    break;
+            }
+        }
+
+        private void UpdatingAGVCDistance()
+        {
+            foreach (KeyValuePair<IAGVC, AGVCDistanceInfo> item in inControlingAgvcList)
+            {
+                item.Value.distance = Distance(item.Key.agvcStates.MapStates.globalCoordinate);
+            }
+        }
+
+        private async void ResumeNavigate(List<IAGVC> agvcToPauseList)
         {
 
+            try
+            {
+                logger.TraceLog($"Resume {agvcToPauseList.Count} AGVC Navigate.({string.Join(",", agvcToPauseList.Select(a => a.EQName))})");
+                foreach (var agvc in agvcToPauseList)
+                {
+                    if (agvc != null)
+                        await agvc?.ResumeNavigate();
+                }
+            }
+            catch (Exception ex)
+            {
+            }
+        }
+        private async void PauseNavigate(List<IAGVC> agvcToPauseList)
+        {
+            logger.TraceLog($"Pause {agvcToPauseList.Count} AGVC Navigate.({string.Join(",", agvcToPauseList.Select(a => a.EQName))})");
+
+            foreach (var agvc in agvcToPauseList)
+            {
+                await agvc.PauseNavigate();
+            }
         }
 
         private double Distance(GlobalCoordinate corrdinate)
         {
             return Math.Sqrt(Math.Pow((corrdinate.x - x), 2) + Math.Pow((corrdinate.y - y), 2));
         }
-
-
-        internal class AGVCDistanceInfo
+        internal void AddAGVC(IAGVC agv)
         {
-            internal readonly IAGVC agvc;
-            internal double distance;
-            internal AGVCDistanceInfo(IAGVC aGVC)
+            if (!inControlingAgvcList.ContainsKey(agv))
+                inControlingAgvcList.Add(agv, new AGVCDistanceInfo(agv));
+            else
+                inControlingAgvcList[agv].agvc = agv;
+
+
+
+        }
+        internal void AddAGVCs(List<IAGVC> agvcList)
+        {
+            foreach (var agvc in agvcList)
+            {
+                if (!inControlingAgvcList.ContainsKey(agvc))
+                    inControlingAgvcList.Add(agvc, new AGVCDistanceInfo(agvc));
+                else
+                    inControlingAgvcList[agvc].agvc = agvc;
+            }
+        }
+
+        public class AGVCDistanceInfo
+        {
+            public enum POSE_STATE
+            {
+                /// <summary>
+                /// 停止
+                /// </summary>
+                STOP,
+                /// <summary>
+                /// 遠離
+                /// </summary>
+                AWAY,
+                /// <summary>
+                /// 接近
+                /// </summary>
+                CLOSE_TO
+            }
+            internal IAGVC agvc;
+            public string agvc_name => agvc.EQName;
+            private double _distance = -1;
+
+            public POSE_STATE pose_state { get; private set; } = POSE_STATE.STOP;
+            public double distance
+            {
+                get => _distance;
+                set
+                {
+
+                    if (value == _distance)
+                        pose_state = POSE_STATE.STOP;
+                    else if (value < _distance)
+                        pose_state = POSE_STATE.CLOSE_TO;
+                    else
+                        pose_state = POSE_STATE.AWAY;
+
+                    _distance = value;
+                }
+            }
+
+            public AGVCDistanceInfo(IAGVC aGVC)
             {
                 this.agvc = aGVC;
             }
