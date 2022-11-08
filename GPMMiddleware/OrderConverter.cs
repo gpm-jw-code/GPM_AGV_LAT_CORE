@@ -27,29 +27,6 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                     ///// </summary>
                     ///// <param name="latOrder"></param>
                     ///// <returns></returns>
-                    //internal static robotMapTaskGoTargetListReq_3066 ToGoTargetListOrder(List<clsLATTaskOrder> latOrder)
-                    //{
-                    //    List<clsLATTaskOrder.clsAction> actions = latOrder.actions;
-                    //    string taskID = latOrder.taskName;
-                    //    List<robotMapTaskGoTargetReq_3051> targetList = new List<robotMapTaskGoTargetReq_3051>();
-                    //    for (int i = 1; i < actions.Count; i++)
-                    //    {
-                    //        robotMapTaskGoTargetReq_3051 target = new robotMapTaskGoTargetReq_3051()
-                    //        {
-                    //            source_id = actions[i - 1].stationID,
-                    //            id = actions[i].stationID,
-                    //            task_id = taskID + $"-{i}"
-
-                    //        };
-                    //        targetList.Add(target);
-                    //    }
-
-                    //    return new robotMapTaskGoTargetListReq_3066()
-                    //    {
-                    //        move_task_list = targetList
-                    //    };
-                    //}
-
                     internal static robotMapTaskGoTargetReq_3051 ToGoTargetOrder(clsLATTaskOrder latOrder)
                     {
                         return new robotMapTaskGoTargetReq_3051
@@ -72,6 +49,8 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                     throw new NotImplementedException();
                 }
             }
+
+
             /// <summary>
             /// 將[AGVS]訂單格式轉成[LAT]訂單格式
             /// </summary>

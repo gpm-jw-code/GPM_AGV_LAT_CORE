@@ -37,11 +37,30 @@ namespace GPM_AGV_LAT_CORE.AGVC
             return true;
         }
 
-
+        public override async Task<bool> RelocProcess()
+        {
+            bool reloc_finish = await AGVInterface.CONTROL.Reloc();
+            if (reloc_finish)
+            {
+                await Task.Delay(1000);
+                logger.WarnLog($"地圖信心度:{AGVInterface.STATES.locationInfo.confidence}");
+                if (AGVInterface.STATES.locationInfo.confidence < 0.5)
+                {
+                    logger.WarnLog($"重定位失敗:信心度過低(<0.5)");
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else
+                return false;
+        }
         protected override async Task<MapInfo> LoadMapStationStored()
         {
-            var stations = await AGVInterface.STATES.GetRobotCurrentStations();
-            var latStations = stations.Value.Select(st => new StationInfo()
+            var mapName = AGVInterface.STATES.mapLoadInfo.current_map;
+            var latStations = AGVInterface.STATES.stationLoadInfo.stations.Select(st => new StationInfo()
             {
                 desc = st.desc,
                 id = st.id,
@@ -52,15 +71,25 @@ namespace GPM_AGV_LAT_CORE.AGVC
             }).ToList();
             return new MapInfo()
             {
-                name = stations.Key,
+                name = mapName,
                 stations = latStations
             };
         }
 
         public override List<string> GetMapNames()
         {
-            List<string> mapNames = AGVInterface.STATES.GetMapNames();
-            return mapNames;
+            try
+            {
+                if (AGVInterface == null)
+                    return new List<string>();
+                List<string> mapNames = AGVInterface.STATES.mapLoadInfo.maps.ToList();
+                return mapNames;
+            }
+            catch (Exception ex)
+            {
+                logger.WarnLog($"{EQName} Get Map Names fail:{ex.Message}");
+                return new List<string>();
+            }
         }
 
         private void NAVIGATIOR_OnReachPoint(object sender, GangHaoAGV.Models.MapModels.Requests.robotMapTaskGoTargetReq_3051 taskInfo)
@@ -75,13 +104,20 @@ namespace GPM_AGV_LAT_CORE.AGVC
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 logger.TraceLog("等待罡豪State Port 連線...");
             }
+            if (!AGVInterface.STATES.stateFetching)
+            {
+                AGVInterface.STATES.StartStatesDataSync();
+                await Task.Delay(1000);
+            }
 
             agvcStates.States.EConnectionState = CONNECTION_STATE.CONNECTED;
             agvcStates.BetteryState.remaining = AGVInterface.STATES.betteryState.battery_level;
+            agvcStates.BetteryState.charging = AGVInterface.STATES.betteryState.charging;
             agvcStates.MapStates.globalCoordinate.x = AGVInterface.STATES.locationInfo.x;
             agvcStates.MapStates.globalCoordinate.y = AGVInterface.STATES.locationInfo.y;
             agvcStates.MapStates.globalCoordinate.r = AGVInterface.STATES.locationInfo.angle;
 
+            agvcStates.MapStates.currentStationID = AGVInterface.STATES.locationInfo.current_station == "" ? "移動中" : AGVInterface.STATES.locationInfo.current_station;
             agvcStates.MapStates.currentMapInfo.name = AGVInterface.STATES.mapLoadInfo.current_map;
             agvcStates.MapStates.currentMapInfo.stations = AGVInterface.STATES.stationLoadInfo.stations.Select(st => new StationInfo()
             {
@@ -96,6 +132,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
 
             robotStatusAlarmRes_11050 alarms = AGVInterface.STATES.alarms;
             agvcStates.AlarmState.Update(GetLatAlarm(alarms));
+            base.SyncStateInstance();
         }
 
         protected override Task SyncOrderStateInstance()
@@ -165,20 +202,27 @@ namespace GPM_AGV_LAT_CORE.AGVC
 
         public override async Task<ORDER_STATE> TaskStateDownload(string taskName)
         {
-            var req = await AGVInterface.STATES.API.GetTaskStatusPackage(new string[] { taskName });
-            if (req.task_status_list == null)
+            AGVInterface.STATES.currentTaskid = taskName;
+
+            var taskStatusPackage = AGVInterface.STATES.taskStatusPakage.task_status_package;
+            var task_status_list = taskStatusPackage.task_status_list;
+            //var req = await AGVInterface.STATES.API.GetTaskStatusPackage(new string[] { taskName });
+            if (task_status_list == null)
                 return ORDER_STATE.WAIT_EXECUTE;
 
-            var taskStatus = req.task_status_list.FirstOrDefault(task => task.task_id == taskName);
+            var taskStatus = task_status_list.FirstOrDefault(task => task.task_id == taskName);
             if (taskStatus != null)
+            {
+                logger.TraceLog($"任務{taskName} |狀態 = {taskStatus.status}");
                 return GangHaoStatusToLATStates(taskStatus.status);
+            }
             else
                 return ORDER_STATE.WAIT_EXECUTE;
         }
 
         public override async Task<object> GetNativeAlarmState()
         {
-            return await AGVInterface.STATES.API.GetAlarms();
+            return AGVInterface.STATES.alarms;
         }
 
         public override async Task PauseNavigate()

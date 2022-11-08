@@ -8,6 +8,9 @@ namespace GPM_AGV_LAT_CORE.LATSystem
 {
     public class SystemParams
     {
+
+        public static bool IsAGVS_Simulation { get; set; } = false;
+
         /// <summary>
         /// 要使用的派車平台廠商
         /// </summary>
@@ -18,7 +21,10 @@ namespace GPM_AGV_LAT_CORE.LATSystem
         /// </summary>
         public static List<AGVC_TYPES> AvgcTypesToUse { get; set; } = new List<AGVC_TYPES>() { AGVC_TYPES.GangHau };
 
-        public static string GangHaoRDSCoreServerUrl = "http://localhost:5279/api/Server";
+        public static string GangHaoRDSCoreServerUrl { get; set; } = "http://localhost:5279/api/Server";
+        public static string KingGallentAGVSEmulatorServerUrl { get; set; } = "http://localhost:5000/api/KingGallentAGVSEmulator";
+
+
 
     }
 }

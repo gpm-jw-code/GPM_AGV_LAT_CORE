@@ -14,6 +14,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.TrafficControl
     /// </summary>
     public class TrafficControlCenter
     {
+        public static bool Enable { get; set; } = false;
         /// <summary>
         /// 站點資訊
         /// </summary>
@@ -36,7 +37,10 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.TrafficControl
 
         public static void JoinTrafficSystem(IAGVC agv, List<string> path) //TODO 
         {
-           
+
+            if (!Enable)
+                return;
+
             foreach (var station in path)
             {
                 if (!ControlingStation.ContainsKey(station))

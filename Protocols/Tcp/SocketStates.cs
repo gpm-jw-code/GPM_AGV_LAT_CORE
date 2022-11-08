@@ -47,7 +47,7 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
             }
         }
 
-        public string ASCIIRev { get; private set; }
+        public string ASCIIRev { get; private set; } = "";
 
         public byte[] revDataBytes { get; private set; }
 

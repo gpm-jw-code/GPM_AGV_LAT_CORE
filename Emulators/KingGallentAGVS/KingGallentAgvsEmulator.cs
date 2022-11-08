@@ -1,26 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using GPM_AGV_LAT_CORE.AGVS.Models.KingAllant;
 using GPM_AGV_LAT_CORE.Logger;
 using GPM_AGV_LAT_CORE.Protocols.Tcp;
 using Newtonsoft.Json;
+using static GPM_AGV_LAT_CORE.AGVC.AGVCStates.MapState;
 
-namespace GPM_AGV_LAT_CORE.Emulators
+namespace GPM_AGV_LAT_CORE.Emulators.KingGallentAGVS
 {
 
-    public class KingGallentAgvsEmulator
+    public partial class KingGallentAgvsEmulator
     {
         protected ILogger logger = new LoggerInstance(typeof(KingGallentAgvsEmulator));
         private static Dictionary<string, Socket> clients = new Dictionary<string, Socket>();
-        public Dictionary<string, AGVCSTate> DictAGVC = new Dictionary<string, AGVCSTate>()
+        public Dictionary<string, BindingAGVC> DictAGVC = new Dictionary<string, BindingAGVC>()
         {
-            {"AGV_001", new AGVCSTate("AGV_001","001:001:001") },
-            {"AGV_002", new AGVCSTate("AGV_002","002:001:002") },
+            {"AGV_001", new BindingAGVC("AGV_001","001:001:001") },
+            {"AGV_002", new BindingAGVC("AGV_002","002:001:002") },
+            {"AGV_003", new BindingAGVC("AGV_003","003:001:003") },
         };
 
         public KingGallentAgvsEmulator(string ip, int port)
@@ -32,7 +34,6 @@ namespace GPM_AGV_LAT_CORE.Emulators
 
         virtual public void Start()
         {
-
             foreach (var agv in DictAGVC.Values)
             {
                 agv.OnTaskDownload += Agv_OnTaskDownload;
@@ -63,11 +64,11 @@ namespace GPM_AGV_LAT_CORE.Emulators
                 try
                 {
 
-                    string[] jsonstrAry = e.ASCIIRev.Replace("*CR", ";").Split(';');
+                    string[] jsonstrAry = e.ASCIIRev.Replace("*", ";").Split(';');
 
                     foreach (var jsonStr in jsonstrAry)
                     {
-                        if (jsonStr == "")
+                        if (!jsonStr.Contains("SID"))
                             continue;
                         HandshakeResponseDataHelper helper = new HandshakeResponseDataHelper();
                         bool success = helper.CreateTemplate(jsonStr);
@@ -90,7 +91,7 @@ namespace GPM_AGV_LAT_CORE.Emulators
                         Dictionary<string, object> returnData = null;
                         if (headerCode == "0101")
                         {
-                            //logger.TraceLog($"AGVC Request(0101):{json}");
+                            logger.TraceLog($"AGVC Request(0101):{jsonStr}");
                             if (EQName == "AGV_002")
                                 returnData = helper.Create0102MessageData(0);//模擬offline
                             else
@@ -137,7 +138,10 @@ namespace GPM_AGV_LAT_CORE.Emulators
                             try
                             {
                                 string ackJson = JsonConvert.SerializeObject(returnData);
-                                e.socket.Send(Encoding.ASCII.GetBytes(ackJson + "*CR"));
+                                List<byte> sendOutBytes = new List<byte>();
+                                sendOutBytes.AddRange(Encoding.ASCII.GetBytes(ackJson));
+                                sendOutBytes.AddRange(new byte[2] { 0x2a, 0x0d });
+                                e.socket.Send(sendOutBytes.ToArray());
                                 //logger.TraceLog($"AGVS Ack({headerCode}):{ackJson}");
                             }
                             catch (Exception ex)
@@ -166,131 +170,28 @@ namespace GPM_AGV_LAT_CORE.Emulators
                     return;
                 }
                 HandshakeRunningStatusReportHelper requestHelper = new HandshakeRunningStatusReportHelper(SID, EQName);
-                client.Send(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(requestHelper.CreateTaskDownload(taskName, stationID)) + "*CR"));
+                List<byte> bytes = new List<byte>();
+                bytes.AddRange(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(requestHelper.CreateTaskDownload(taskName, stationID))));
+                bytes.AddRange(new byte[] { 0x2A, 0x0D });
+                client.Send(bytes.ToArray());
             });
-        }
-
-        public class OrderResult
-        {
-            public enum RUN_STATE
-            {
-                EXECUTING,
-                WAITING,
-                CANCELED,
-                FAIL
-            }
-            public OrderResult(bool Success, RUN_STATE State)
-            {
-                this.Success = Success;
-                this.State = State;
-            }
-            public bool Success { get; set; }
-            public string ErrorMessage { get; set; }
-            public RUN_STATE State { get; set; }
-        }
-
-
-        public class TaskDownObject
-        {
-            public string SID { get; set; }
-            public string EQName { get; set; }
-            public string taskName { get; set; }
-            public string stationID { get; set; }
-        }
-
-        public class AGVCSTate
-        {
-
-            public event EventHandler<TaskDownObject> OnTaskDownload;
-
-            public AGVCSTate(string EQName, string SID)
-            {
-                this.EQName = EQName;
-                this.SID = SID;
-            }
-
-            public string SID { get; set; }
-            public string EQName { get; set; }
-            public OrderTask ExecutingOrder { get; private set; } = null;
-            public string ExecutingTaskName { get; private set; } = null;
-            public Queue<OrderTask> waintingOrderLinks { get; private set; } = new Queue<OrderTask>();
-
-            private ManualResetEvent OrderTaskResetEvent = new ManualResetEvent(false);
-            private CancellationTokenSource NavigatingCancelTokenSource = new CancellationTokenSource();
-
-            internal OrderResult NewOrder(OrderTask order, bool waitOtherTaskFinish)
-            {
-                if (ExecutingOrder != null && waitOtherTaskFinish) //當有任務鍊在進行中 但接受等待
-                {
-                    waintingOrderLinks.Enqueue(order);
-                    return new OrderResult(true, OrderResult.RUN_STATE.WAITING);
-                }
-                OrderTaskResetEvent = new ManualResetEvent(true);
-                _ = OrderLinkRun(order);
-                return new OrderResult(true, OrderResult.RUN_STATE.EXECUTING);
-            }
-
-
-            private async Task OrderLinkRun(OrderTask order)
-            {
-                NavigatingCancelTokenSource = new CancellationTokenSource();
-                ExecutingOrder = order;
-
-                await Task.Factory.StartNew(async () =>
-                {
-                    try
-                    {
-                        while (order.StationsQueue.Count != 0)
-                        {
-                            OrderTaskResetEvent.Reset();//封鎖
-
-                            OrderTask.StationInfo station = order.StationsQueue.Dequeue();
-                            ExecutingTaskName = order.TaskID + $"station-{station.stationID}";
-                            OnTaskDownload?.Invoke(this, new TaskDownObject { SID = this.SID, EQName = this.EQName, taskName = ExecutingTaskName, stationID = station.stationID });
-                            OrderTaskResetEvent.WaitOne();
-
-                        }
-
-                        ExecutingOrder = null;
-                        ExecutingTaskName = null;
-
-                        if (waintingOrderLinks.Count != 0)
-                        {
-                            OrderTask nextExecuting = waintingOrderLinks.Dequeue();
-                            Task.Factory.StartNew(() => OrderLinkRun(nextExecuting));
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                    }
-
-
-                }, NavigatingCancelTokenSource.Token);
-
-            }
-
-            internal void SetWorkFlowResume()
-            {
-                OrderTaskResetEvent.Set();
-            }
-
-            internal void CancelNavigating()
-            {
-                waintingOrderLinks.Clear();
-                ExecutingOrder?.StationsQueue.Clear();
-                NavigatingCancelTokenSource.Cancel();
-            }
         }
 
         public async Task<OrderResult> CreateNewOrder(string SID, string EQName, OrderTask order, bool waitOtherTaskFinish = true)
         {
-            bool agvcExist = DictAGVC.TryGetValue(EQName, out AGVCSTate agvc);
+            bool agvcExist = DictAGVC.TryGetValue(EQName, out BindingAGVC agvc);
             if (!agvcExist)
                 return new OrderResult(false, OrderResult.RUN_STATE.FAIL)
                 {
                     ErrorMessage = $"{EQName} 是一台靈車??(不存在)"
                 };
+
+            var non_exist_station_ids = order.Stations.FindAll(stationID => agvc.mapInfo.station_id_list.Contains(stationID) == false);
+            if (non_exist_station_ids.Count != 0)
+            {
+
+                return new OrderResult(false, OrderResult.RUN_STATE.FAIL) { ErrorMessage = $"部分要求的站點({string.Join(",", non_exist_station_ids)})不存在於當前地圖" };
+            }
 
             return agvc.NewOrder(order, waitOtherTaskFinish);
 
@@ -301,8 +202,12 @@ namespace GPM_AGV_LAT_CORE.Emulators
         /// <summary>
         /// 0305 當 AGVC 收到此 CMD 後，會依 Reset Mode 判斷是否為立即停下，停在點與點中間是可行的。若否，則待移動到 Node 上才停止。
         /// </summary>
-        public void AGVSReset(string SID, string EQName, int ResetMode)
+        public void AGVSReset(string EQName, int ResetMode, string SID = null)
         {
+
+            if (SID == null)
+                SID = DictAGVC[EQName].SID;
+
             Socket client = FindColient(SID, EQName);
             if (client == null)
             {
@@ -328,45 +233,43 @@ namespace GPM_AGV_LAT_CORE.Emulators
         }
         private void Send(Socket client, Dictionary<string, object> data)
         {
-            client.Send(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(data) + "*CR"));
+            List<byte> bytes = new List<byte>();
+            bytes.AddRange(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(data)));
+            bytes.AddRange(new byte[] { 0x2A, 0x0D });
+            client.Send(bytes.ToArray());
         }
 
-        public class OrderTask
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="EQName"></param>
+        /// <param name="mapInfo"></param>
+        public void UpdateMapState(string EQName, MapInfo mapInfo)
         {
-            public OrderTask()
+            if (DictAGVC.TryGetValue(EQName, out BindingAGVC agvc))
             {
-
-            }
-            public OrderTask(string TaskID, List<string> stationIDs)
-            {
-                this.TaskID = TaskID;
-                Stations = stationIDs;
-                foreach (var stationID in stationIDs)
-                {
-                    var stationInfo = new StationInfo() { stationID = stationID, Status = 0 };
-                    StationsQueue.Enqueue(stationInfo);
-                }
-            }
-
-            public string TaskID { get; set; }
-
-            internal Queue<StationInfo> StationsQueue { get; set; } = new Queue<StationInfo>();
-            public List<string> Stations { get; set; } = new List<string>();
-
-            public List<string> ReachedStationIDList { get; private set; } = new List<string>();
-
-            public void StationReachReport(string stationID)
-            {
-                ReachedStationIDList.Add(stationID);
-            }
-
-            public class StationInfo
-            {
-                public string stationID { get; set; }
-                internal int Status { get; set; }
+                agvc.mapInfo = mapInfo;
             }
         }
 
+        public void UpdateAGVCBind(Dictionary<string, string> sid_eqNames)
+        {
 
+            foreach (var agv in DictAGVC.Values)
+            {
+                agv.OnTaskDownload -= Agv_OnTaskDownload;
+            }
+
+            DictAGVC = new Dictionary<string, BindingAGVC>();
+            foreach (var item in sid_eqNames)
+            {
+                DictAGVC.Add(item.Value, new BindingAGVC(item.Value, item.Key));
+
+            }
+            foreach (var agv in DictAGVC.Values)
+            {
+                agv.OnTaskDownload += Agv_OnTaskDownload;
+            }
+        }
     }
 }

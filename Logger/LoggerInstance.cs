@@ -12,7 +12,7 @@ namespace GPM_AGV_LAT_CORE.Logger
 
         protected string className;
 
-        internal LoggerInstance(Type T)
+        public LoggerInstance(Type T)
         {
             className = T.Name;
         }
@@ -35,7 +35,7 @@ namespace GPM_AGV_LAT_CORE.Logger
         public void ErrorLog(Exception ex)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            ConsoleWriteLine("Error", ex.Message);
+            ConsoleWriteLine("Error", ex.Message + ex.StackTrace);
         }
 
         public void FatalLog(string message, Exception ex)

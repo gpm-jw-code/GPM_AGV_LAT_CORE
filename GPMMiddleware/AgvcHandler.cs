@@ -44,10 +44,9 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                 logger.InfoLog($"agvc-{agvc.EQName} online State download result : {onlineState}");
                 agvc.agvcStates.States.EOnlineState = onlineState;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                throw;
+                logger.ErrorLog(ex);
             }
         }
 

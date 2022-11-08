@@ -12,5 +12,6 @@ namespace GPM_AGV_LAT_CORE.AGVC.AGVCStates
     public class BetteryStates
     {
         public double remaining { get; internal set; } = -1;
+        public bool charging { get; internal set; } = false;
     }
 }

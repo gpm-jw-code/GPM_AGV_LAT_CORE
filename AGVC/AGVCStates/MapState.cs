@@ -31,6 +31,7 @@ namespace GPM_AGV_LAT_CORE.AGVC.AGVCStates
             public string name { get; set; }
             public string mapFileUrl { get; set; }
             public List<StationInfo> stations { get; set; } = new List<StationInfo>();
+            public List<string> station_id_list => stations.Select(st => st.id).ToList();
         }
 
         public class StationInfo : GlobalCoordinate

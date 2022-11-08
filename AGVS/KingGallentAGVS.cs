@@ -13,8 +13,10 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace GPM_AGV_LAT_CORE.AGVS
 {
@@ -26,6 +28,7 @@ namespace GPM_AGV_LAT_CORE.AGVS
         public AGVS_TYPES agvsType { get; set; } = AGVS_TYPES.KINGGALLENT;
         public AGVSParameters agvsParameters { get; set; } = new AGVSParameters();
         public bool connected { get; set; }
+        public bool isReconnecting { get; set; } = false;
         /// <summary>
         ///  
         /// </summary>
@@ -55,7 +58,30 @@ namespace GPM_AGV_LAT_CORE.AGVS
         /// <returns></returns>
         public bool ConnectToHost(out string err_msg)
         {
-            return ClientSideConnect(out err_msg);
+            bool connected = ClientSideConnect(out err_msg);
+            Task.Run(async () =>
+            {
+                if (SystemParams.IsAGVS_Simulation)
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        try
+                        {
+                            var bodyData = AGVSManager.CurrentAGVS.BindingAGVCInfoList.ToDictionary(agvc_info => (agvc_info as AgvcInfoForKingAllant).SID, agvc_info => (agvc_info as AgvcInfoForKingAllant).EQName);
+                            StringContent content = new StringContent(JsonConvert.SerializeObject(bodyData));
+                            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+                            var res = await client.PostAsync(SystemParams.KingGallentAGVSEmulatorServerUrl + $"/UpdateAGVCBind", content);
+                            var status_code = res.StatusCode;
+                            if (status_code == System.Net.HttpStatusCode.OK)
+                                logger.InfoLog($"已同步AGVC資訊到KinGallent模擬派車系統");
+                        }
+                        catch (Exception)
+                        {
+                        }
+                    }
+                }
+            });
+            return connected;
         }
 
         /// <summary>
@@ -67,8 +93,10 @@ namespace GPM_AGV_LAT_CORE.AGVS
         {
             try
             {
+                Console.WriteLine("{0}:{1}", agvsParameters.tcpParams.HostIP, agvsParameters.tcpParams.HostPort);
                 tcpSocketClient = new TcpSocketClient(agvsParameters.tcpParams.HostIP, agvsParameters.tcpParams.HostPort);
                 tcpSocketClient.OnMessageReceive += TcpSocketClient_OnMessageReceive;
+                tcpSocketClient.OnDisconnect += TcpSocketClient_OnDisconnect;
                 connected = tcpSocketClient.Connect(out err_msg);
                 agvsApi = new KingAllantAPI(tcpSocketClient);
                 return connected;
@@ -80,14 +108,38 @@ namespace GPM_AGV_LAT_CORE.AGVS
             }
         }
 
+        private void TcpSocketClient_OnDisconnect(object sender, EventArgs e)
+        {
+
+            connected = false;
+            logger.WarnLog($"KingGallent 派車系統斷線");
+
+            if (!isReconnecting)
+            {
+
+                Task.Run(async () =>
+                {
+                    isReconnecting = true;
+                    while (!ClientSideConnect(out string message))
+                    {
+                        logger.WarnLog($"嘗試與派車系統重新連線失敗...");
+                        await Task.Delay(1000);
+                    }
+                    isReconnecting = false;
+                    logger.WarnLog($"嘗試與派車系統重新連線成功!");
+
+                });
+            }
+        }
+
         private void TcpSocketClient_OnMessageReceive(object sender, SocketStates _SocketStates)
         {
             try
             {
-                string[] splitedAry = _SocketStates.ASCIIRev.Replace("*CR", ";").Split(';');
+                string[] splitedAry = _SocketStates.ASCIIRev.Replace("*", ";").Split(';');
                 foreach (var jsonStr in splitedAry)
                 {
-                    if (jsonStr == "" | jsonStr == null)
+                    if (!jsonStr.Contains("SID"))
                         continue;
                     mhsLogger.AGVSToLAT(jsonStr);
                     Dictionary<string, object> revObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonStr);

@@ -47,10 +47,14 @@ namespace GPM_AGV_LAT_CORE.AGVC.AGVCStates
             var newNotices = newStates.Notices?.FindAll(fatal => !Notices.Any(f => f.time == fatal.time));
 
 
-            Fatals.AddRange(newFatals);
-            Errors.AddRange(newErrors);
-            Warnings.AddRange(newWarnings);
-            Notices.AddRange(newNotices);
+            if (newFatals != null)
+                Fatals.AddRange(newFatals);
+            if (newErrors != null)
+                Errors.AddRange(newErrors);
+            if (newWarnings != null)
+                Warnings.AddRange(newWarnings);
+            if (newNotices != null)
+                Notices.AddRange(newNotices);
         }
 
 

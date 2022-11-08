@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace GPM_AGV_LAT_CORE.Protocols.Tcp
 {
-    public class TcpSocketClient
+    public class TcpSocketClient : IDisposable
     {
         public ILogger logger;
         public Socket socket { get; set; }
@@ -20,6 +21,9 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
         private ManualResetEvent serverReply = new ManualResetEvent(false);
 
         public event EventHandler<SocketStates> OnMessageReceive;
+        public event EventHandler<byte[]> OnMessageSend;
+        public event EventHandler OnDisconnect;
+        public event EventHandler OnSendTimeout;
 
         public SocketStates socketState { get; set; } = new SocketStates(8192);
         public TcpSocketClient()
@@ -33,7 +37,7 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
             this.hostPort = hostPort;
         }
 
-        internal bool Connect()
+        public bool Connect()
         {
             try
             {
@@ -43,6 +47,11 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
                 socket.BeginReceive(socketState.buffer, 0, socketState.bufferSize, SocketFlags.None, new AsyncCallback(ReceieveCallBack), socketState);
 
                 return true;
+            }
+            catch (SocketException)
+            {
+                OnDisconnect?.Invoke(this, null);
+                return false;
             }
             catch (Exception ex)
             {
@@ -60,6 +69,11 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
                 socket.BeginReceive(socketState.buffer, 0, socketState.bufferSize, SocketFlags.None, new AsyncCallback(ReceieveCallBack), socketState);
                 return true;
             }
+            catch (SocketException)
+            {
+                OnDisconnect?.Invoke(this, null);
+                return false;
+            }
             catch (Exception ex)
             {
                 errmsg = ex.Message;
@@ -68,6 +82,7 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
         }
 
         private SocketStates serverReplyState;
+        private bool disposedValue;
 
         private void ReceieveCallBack(IAsyncResult ar)
         {
@@ -78,35 +93,142 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
                 _socketState.receieveLen = receieveLen;
                 serverReplyState = _socketState;
                 serverReply.Set();
-                OnMessageReceive?.Invoke(this, _socketState);
-                _socketState.ClearBuffer();
-                socket.BeginReceive(_socketState.buffer, 0, _socketState.bufferSize, SocketFlags.None, ReceieveCallBack, _socketState);
+                if (receieveLen != 0)
+                    OnMessageReceive?.Invoke(this, _socketState);
 
+                _socketState.ClearBuffer();
+                Task.Factory.StartNew(() => socket.BeginReceive(_socketState.buffer, 0, _socketState.bufferSize, SocketFlags.None, ReceieveCallBack, _socketState));
+
+            }
+            catch (SocketException)
+            {
+                OnDisconnect?.Invoke(this, null);
             }
             catch (Exception ex)
             {
 
             }
         }
+        public void Disconnect()
+        {
+            try
+            {
+                socket.Disconnect(true);
+                socket.Close();
+            }
+            catch (Exception)
+            {
+
+            }
+            OnDisconnect?.Invoke(this, null);
+        }
 
         internal async Task<SocketStates> Send(byte[] data, bool waitReply)
         {
-            return await Task.Run(() =>
+            try
             {
-                try
+                bool repplyed = false;
+                bool timeout = false;
+                if (waitReply)
                 {
-                    serverReply.Reset();
-                    socket.Send(data, data.Length, SocketFlags.None);
-                    if (waitReply)
-                        serverReply.WaitOne();
-                    return serverReplyState;
+                    CancellationTokenSource cancel = new CancellationTokenSource(5000);
+                    _ = Task.Factory.StartNew(async () =>
+                    {
+                        while (repplyed == false)
+                        {
+                            if (cancel.IsCancellationRequested)
+                            {
+                                timeout = true;
+                                serverReply.Set();
+                                return;
+                            }
+                            await Task.Delay(100);
+                        }
+                        timeout = false;
+                    }, cancel.Token);
                 }
-                catch (Exception)
+
+                var return_state = await Task.Run(() =>
                 {
-                    return new SocketStates();
+                    try
+                    {
+                        serverReply.Reset();
+
+                        int sendout_bytes = socket.Send(data);
+                        if (sendout_bytes > 0)
+                            OnMessageSend?.Invoke(this, data);
+
+                        if (waitReply)
+                        {
+                            serverReply.WaitOne();
+                            repplyed = true;
+                        }
+                        return serverReplyState;
+                    }
+                    catch (SocketException)
+                    {
+                        OnDisconnect?.Invoke(this, null);
+                        return new SocketStates();
+                    }
+                    catch (Exception)
+                    {
+                        return new SocketStates();
+                    }
+                });
+                if (waitReply)
+                {
+                    if (timeout)
+                    {
+                        OnSendTimeout?.Invoke(this, null);
+                        return new SocketStates();
+                    }
+                    else
+                        return return_state;
                 }
-            });
+                else
+                    return return_state;
+
+            }
+            catch (SocketException)
+            {
+                OnDisconnect?.Invoke(this, null);
+                return new SocketStates();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
         }
 
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: 處置受控狀態 (受控物件)
+                }
+
+                // TODO: 釋出非受控資源 (非受控物件) 並覆寫完成項
+                // TODO: 將大型欄位設為 Null
+                Disconnect();
+                disposedValue = true;
+            }
+        }
+
+        // // TODO: 僅有當 'Dispose(bool disposing)' 具有會釋出非受控資源的程式碼時，才覆寫完成項
+        // ~TcpSocketClient()
+        // {
+        //     // 請勿變更此程式碼。請將清除程式碼放入 'Dispose(bool disposing)' 方法
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
+        {
+            // 請勿變更此程式碼。請將清除程式碼放入 'Dispose(bool disposing)' 方法
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
     }
 }

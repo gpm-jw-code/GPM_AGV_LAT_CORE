@@ -1,7 +1,5 @@
 ﻿using GangHaoAGV.Models;
 using GangHaoAGV.Models.StateModels.Responses;
-using GangHaoAGV.Models.ControlModels.Responses;
-using GPM_AGV_LAT_CORE.AGVC;
 using GPM_AGV_LAT_CORE.Protocols.Tcp;
 using Newtonsoft.Json;
 using System;
@@ -12,8 +10,7 @@ using System.Threading.Tasks;
 using static GangHaoAGV.Models.StateModels.Responses.robotStatusRelocRes_11021;
 using System.Net.Sockets;
 using GPM_AGV_LAT_CORE.Logger;
-using System.Threading;
-using GangHaoAGV.Models.MapModels.Requests;
+using GPM_AGV_LAT_CORE.Emulators.KingGallentAGVS;
 
 namespace GPM_AGV_LAT_CORE.Emulators.GangHao
 {
@@ -40,7 +37,7 @@ namespace GPM_AGV_LAT_CORE.Emulators.GangHao
         private int LocationXInitial = 0;
         private int LocationYInitial = 0;
 
-        public RELOC_STATE relocState = RELOC_STATE.RELOCING;
+        public RELOC_STATE relocState = RELOC_STATE.SUCCESS;
         public Dictionary<Dictionary<string, string>, bool> MapStatus = new Dictionary<Dictionary<string, string>, bool>();
 
         double[] currentPosition = new double[3] { 0, 0, 0 };
@@ -269,7 +266,10 @@ namespace GPM_AGV_LAT_CORE.Emulators.GangHao
                     create_on = DateTime.Now.ToString("yyyyMMdd HH:mm:ss"),
                     ret_code = 0,
                     err_msg = "",
-                    task_status_list = taskStatus.Select(t => new robotStatusTaskStatusPackageRes_11110.TaskStatus { status = t.Value, task_id = t.Key }).ToArray()
+                    task_status_package = new Task_Status_Package()
+                    {
+                        task_status_list = taskStatus.Select(t => new GangHaoAGV.Models.StateModels.Responses.TaskStatus { status = t.Value, task_id = t.Key }).ToArray()
+                    }
                 };
             }
             if (cmbTypeNo == 1021)
@@ -295,7 +295,8 @@ namespace GPM_AGV_LAT_CORE.Emulators.GangHao
 
                 if (!(replyData as robotStatusTaskRes_11020).isNavigating)
                 {
-                    MapStatus.Remove(MapStatus.Keys.Last());
+                    if (MapStatus.Count != 0)
+                        MapStatus.Remove(MapStatus.Keys.Last());
                 }
             }
             if (cmbTypeNo == 1050)

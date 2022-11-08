@@ -35,10 +35,11 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
             {
                 ORDER_STATE _preState = ORDER_STATE.NotFound;
                 Agvc.agvcStates.MapStates.currentStationID = "Navigating";
+               
                 while (true)
                 {
                     await Task.Delay(1000);
-                    var state = await Agvc.TaskStateDownload(task_id);
+                    ORDER_STATE state = await Agvc.TaskStateDownload(task_id);
                     NewExecuting.State = state;
 
                     if (_preState != state)
@@ -54,7 +55,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                 }
 
 
-                Agvc.agvcStates.MapStates.currentStationID = NewExecuting.latOrderDetail.action.stationID;
+                //Agvc.agvcStates.MapStates.currentStationID = NewExecuting.latOrderDetail.action.stationID;
                 Agvc.agvcStates.MapStates.navigationState.pathStations.Clear();
                 Agvc.agvcStates.MapStates.navigationState.IsNavigating = false;
 

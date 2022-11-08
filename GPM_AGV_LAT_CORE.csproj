@@ -143,10 +143,15 @@
     <Compile Include="AGVS\Models\KingAllant\RunningStateReportModel.cs" />
     <Compile Include="AGVS\Order\IAGVSOrder.cs" />
     <Compile Include="Emulators\EmulatorsManager.cs" />
+    <Compile Include="Emulators\GangHao\GangHaoAGVCEmulate.cs" />
     <Compile Include="Emulators\GangHao\GangHaoAgvc_MapEmulator.cs" />
     <Compile Include="Emulators\GangHao\GangHaoAgvc_ControlEmulator.cs" />
     <Compile Include="Emulators\GangHao\GangHaoAgvc_StateEmulator.cs" />
-    <Compile Include="Emulators\KingGallentAgvsEmulator.cs" />
+    <Compile Include="Emulators\KingGallentAGVS\AGVCSTate.cs" />
+    <Compile Include="Emulators\KingGallentAGVS\KingGallentAgvsEmulator.cs" />
+    <Compile Include="Emulators\KingGallentAGVS\OrderResult.cs" />
+    <Compile Include="Emulators\KingGallentAGVS\OrderTask.cs" />
+    <Compile Include="Emulators\KingGallentAGVS\TaskDownObject.cs" />
     <Compile Include="Emulators\ROSEmu\ROSCoreAPI.cs" />
     <Compile Include="GPMMiddleware\AgvcHandler.cs" />
     <Compile Include="GPMMiddleware\AgvsHandler.cs" />

@@ -6,9 +6,12 @@ using GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order;
 using GPM_AGV_LAT_CORE.LATSystem;
 using GPM_AGV_LAT_CORE.Logger;
 using GPM_AGV_LAT_CORE.Parameters;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using static GPM_AGV_LAT_CORE.AGVC.AGVCStates.MapState;
 
@@ -74,15 +77,34 @@ namespace GPM_AGV_LAT_CORE.AGVC
         {
             agvcStates.States.EConnectionState = CONNECTION_STATE.CONNECTING;
             bool connected = ConnectoAGVInstance();
-            if (connected)
-            {
-                agvcStates.MapStates.currentMapInfo = LoadMapStationStored().Result;
-                CheckOnlineStateFromAGVSRequest?.Invoke(this, this);
-            }
-            if (agvcStates.States.EOnlineState != ONLINE_STATE.ONLINE)
-                OnlineOfflineRequest?.Invoke(this, new OnOffLineRequest(this, ONLINE_STATE.ONLINE));
             agvcStates.States.EConnectionState = connected ? CONNECTION_STATE.CONNECTED : CONNECTION_STATE.DISCONNECT;
+
+
             return connected;
+        }
+
+        virtual public async Task OnlineStateInitProcess()
+        {
+            logger.InfoLog($"{EQName} 上線狀態初始化開始");
+            int ind = 1;
+            var state = ONLINE_STATE.Unknown;
+            while (state == ONLINE_STATE.Unknown | state == ONLINE_STATE.Downloading)
+            {
+                agvcStates.States.EOnlineState = ONLINE_STATE.Downloading;
+                logger.InfoLog($"{EQName} 嘗試下載上線狀態...({ind})");
+                await Task.Delay(1000);
+                CheckOnlineStateFromAGVSRequest?.Invoke(this, this);
+                state = this.agvcStates.States.EOnlineState;
+                ind += 1;
+            }
+
+            ind = 1;
+            while (agvcStates.States.EOnlineState != ONLINE_STATE.ONLINE)
+            {
+                logger.InfoLog($"{EQName} 上線請求狀態...({ind})");
+                OnlineOfflineRequest?.Invoke(this, new OnOffLineRequest(this, ONLINE_STATE.ONLINE));
+                ind += 1;
+            }
         }
 
         virtual public List<string> GetMapNames()
@@ -109,7 +131,9 @@ namespace GPM_AGV_LAT_CORE.AGVC
                 try
                 {
                     await SyncStateInstance();
-                    StateChangedDelagate();
+
+                    if (agvcStates.States.EOnlineState != ONLINE_STATE.Unknown)
+                        StateChangedDelagate();
                     //logger.InfoLog("車體狀態完成同步");
                 }
                 catch (Exception ex)
@@ -156,7 +180,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
         {
 
             var excutingOrder = orderList_LAT.FirstOrDefault(order => order.State == ORDER_STATE.EXECUTING);
-            bool anyTaskExecute = excutingOrder != null;
+            bool anyTaskExecute = !orderList_LAT.All(order => order.State == ORDER_STATE.COMPLETE | order.State == ORDER_STATE.CANCELED);
 
             agvcStates.MapStates.navigationState.IsNavigating = anyTaskExecute;
 
@@ -189,7 +213,23 @@ namespace GPM_AGV_LAT_CORE.AGVC
 
         virtual protected async Task SyncStateInstance()
         {
-            throw new NotImplementedException();
+            if (SystemParams.IsAGVS_Simulation)
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    try
+                    {
+
+                        StringContent content = new StringContent(JsonConvert.SerializeObject(agvcStates.MapStates.currentMapInfo));
+                        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+                        var res = await client.PostAsync(SystemParams.KingGallentAGVSEmulatorServerUrl + $"/UpdateMapState?EqName={EQName}", content);
+                        var status_code = res.StatusCode;
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+            }
         }
 
         virtual public void AddHostOrder(clsHostExecuting order)
@@ -222,6 +262,11 @@ namespace GPM_AGV_LAT_CORE.AGVC
         }
 
         virtual public Task ResumeNavigate()
+        {
+            throw new NotImplementedException();
+        }
+
+        virtual public async Task<bool> RelocProcess()
         {
             throw new NotImplementedException();
         }

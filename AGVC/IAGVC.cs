@@ -102,7 +102,11 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// </summary>
         /// <returns></returns>
         Task ResumeNavigate();
-
+        /// <summary>
+        /// 上下線狀態初始化
+        /// </summary>
+        /// <returns></returns>
+        Task OnlineStateInitProcess();
         Task<ORDER_STATE> TaskStateDownload(string taskName);
         /// <summary>
         /// 將訂單加入列表
@@ -124,5 +128,6 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// <param name="e"></param>
         void AGVCDataConvertToLATFormat(object agvcData);
         List<string> GetMapNames();
+        Task<bool> RelocProcess();
     }
 }

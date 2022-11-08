@@ -24,7 +24,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
                 returnObj = new Dictionary<string, object>() {
                     {"SID",_remoteObj["SID"]},
                     {"EQName",_remoteObj["EQName"]},
-                    {"System Bytes",_remoteObj["System Bytes"]},
+                    {"SystemBytes",_remoteObj["SystemBytes"]},
                     {"Header", new Dictionary<string,object>() },
                 };
             }
@@ -46,7 +46,13 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
         {
             try
             {
-                remoteObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(Jsonstr);
+                var remoteObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(Jsonstr);
+                _remoteObj = new Dictionary<string, object>() {
+                    {"SID",remoteObj["SID"]},
+                    {"EQName",remoteObj["EQName"]},
+                    {"SystemBytes",remoteObj["SystemBytes"]},
+                    {"Header", new Dictionary<string,object>() },
+                };
                 return true;
             }
             catch (Exception ex)
@@ -62,7 +68,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             {
                 {"0102",new Dictionary<string, object>()
                 {
-                    {"Time stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss") },
+                    {"Time Stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss") },
                     {"Remote Mode",RemoteMode }
                 } }
             };
@@ -80,7 +86,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             {
                 {"0104",new Dictionary<string, object>()
                 {
-                    {"Time stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss") },
+                    {"Time Stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss") },
                     {"Return Code",ReturnCode }
                 } }
             };
@@ -93,7 +99,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             {
                 {"0106",new Dictionary<string, object>()
                 {
-                    {"Time stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss") },
+                    {"Time Stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss") },
                     {"Return Code",ReturnCode }
                 } }
             };

@@ -3,8 +3,10 @@ using GPM_AGV_LAT_CORE.AGVC.AGVCStates;
 using GPM_AGV_LAT_CORE.AGVS;
 using GPM_AGV_LAT_CORE.GPMMiddleware;
 using GPM_AGV_LAT_CORE.LATSystem;
+using GPM_AGV_LAT_CORE.Logger;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,13 +15,15 @@ namespace GPM_AGV_LAT_CORE.AGVC
 {
     public class AGVCManager
     {
+        static ILogger logger = new LoggerInstance(typeof(AGVCManager));
         /// <summary>
         ///  AGV列表
         /// </summary>
         public static List<IAGVC> AGVCList = new List<IAGVC>()
         {
-           new GangHaoAGVC() {ID="0001",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.104"} }},
-           new GangHaoAGVC() {ID="0002",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.107"} }},
+           new GangHaoAGVC() {ID="001",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.1.227"} }},
+           new GangHaoAGVC() {ID="002",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.1.215"} }},
+           new GangHaoAGVC() {ID="003",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.1.55"} }},
         };
 
 
@@ -110,7 +114,25 @@ namespace GPM_AGV_LAT_CORE.AGVC
         {
             foreach (IAGVC agvc in AGVCList.FindAll(agvc => agvc.agvcInfos != null))
             {
-                agvc.ConnectToAGV();
+                Task.Run(async () =>
+                {
+                    bool connected = agvc.ConnectToAGV();
+                    if (connected)
+                    {
+                        logger.InfoLog($"AGVC-{agvc.EQName} Connected");
+                        await Task.Delay(1000);
+                        if (!Debugger.IsAttached)
+                        {
+                            logger.InfoLog($"{agvc.EQName}>>執行重定位");
+                            bool reloc_success = await agvc.RelocProcess();
+                            logger.InfoLog($"{agvc.EQName}>>執行重定位 {(reloc_success ? "成功" : "失敗")}");
+                        }
+                        agvc.OnlineStateInitProcess();
+                    }
+                    else
+                        logger.FatalLog($"AGVC-{agvc.EQName} Connect fail...", new Exception("agvc connected fail"));
+
+                });
             }
         }
         internal static void StartStateAsync()

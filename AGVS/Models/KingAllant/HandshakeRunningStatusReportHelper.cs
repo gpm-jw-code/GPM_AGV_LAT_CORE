@@ -14,23 +14,23 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
         public string Jsonstr { get; set; }
         private Dictionary<string, object> returnObj;
 
-        public HandshakeRunningStatusReportHelper(AgvcInfoForKingAllant infos, int SystemBytes = 1)
+        public HandshakeRunningStatusReportHelper(AgvcInfoForKingAllant infos, uint SystemBytes = 1)
         {
             returnObj = new Dictionary<string, object>()
             {
                     {"SID",infos.SID},
                     {"EQName",infos.EQName},
-                    {"System Bytes",SystemBytes},
+                    {"SystemBytes",SystemBytes},
                     {"Header", new Dictionary<string,object>() },
             };
         }
-        public HandshakeRunningStatusReportHelper(string SID, string EQName, int SystemBytes = 1)
+        public HandshakeRunningStatusReportHelper(string SID, string EQName, uint SystemBytes = 1)
         {
             returnObj = new Dictionary<string, object>()
             {
                     {"SID",SID},
                     {"EQName",EQName},
-                    {"System Bytes",SystemBytes},
+                    {"SystemBytes",SystemBytes},
                     {"Header", new Dictionary<string,object>() },
             };
         }
@@ -46,7 +46,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
                 {
                     "0105" ,new Dictionary<string, object>()
                     {
-                        { "Time stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss")},
+                        { "Time Stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss")},
                         { "Coordination",null},
                         { "Last Visited Node",null},
                         { "AGV Status",null},
@@ -74,7 +74,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             return CreateStateReportDataModel(new RunningStateReportModel()
             {
                 RamUsagePercent = 69.3,
-                AGVStatus = (int)agvcStates.States.ERunningState
+                AGVStatus = 1
             });
         }
 
@@ -90,7 +90,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
                 {
                     "0105" ,new Dictionary<string, object>()
                     {
-                        { "Time stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss")},
+                        { "Time Stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss")},
                         { "Coordination",model.Corrdination},
                         { "Last Visited Node",model.LastVisitedNode},
                         { "AGV Status",model.AGVStatus},
@@ -129,7 +129,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
         {
             returnObj["Header"] = new Dictionary<string, object>()
             {
-                { "0101" ,new Dictionary<string, object>(){{"Time stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss")},
+                { "0101" ,new Dictionary<string, object>(){{"Time Stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss")},
                 } }
             };
             return returnObj;
@@ -158,7 +158,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             returnObj["Header"] = new Dictionary<string, object>()
             {
                 { "0103" , new Dictionary<string, object>(){
-                    {"Time stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss")},
+                    {"Time Stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss")},
                     {"Mode Request",ModeRequest},
                     {"Current Node",CurrentNode},
                 } }
@@ -172,7 +172,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             returnObj["Header"] = new Dictionary<string, object>()
             {
                 { "0301" , new Dictionary<string, object>(){
-                    {"Time stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss")},
+                    {"Time Stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss")},
                     {"Task Name",taskName},
                     {"Task Simplex",taskName},
                     {"Task Sequence",taskName},
@@ -205,7 +205,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             {
                 {"0303",new Dictionary<string, object>()
                 {
-                    {"Time stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss") },
+                    {"Time Stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss") },
                     {"Task Name",taskName },
                     {"Task Simplex",taskSimplex },
                     {"Task Sequence",taskSequence },
@@ -223,7 +223,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             returnObj["Header"] = new Dictionary<string, object>()
             {
                 { "0305" , new Dictionary<string, object>(){
-                    {"Time stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss")},
+                    {"Time Stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss")},
                     {"Reset Mode",resetMode},
                 } }
             };

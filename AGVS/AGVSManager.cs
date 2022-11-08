@@ -19,6 +19,9 @@ namespace GPM_AGV_LAT_CORE.AGVS
         /// </summary>
         public static IAGVS CurrentAGVS;
 
+
+
+
         /// <summary>
         /// 連接到系統參數所指定的派車平台
         /// </summary>
@@ -33,13 +36,14 @@ namespace GPM_AGV_LAT_CORE.AGVS
                     {
                          new AgvcInfoForKingAllant(){  AGVID="001", StationID="001", EQID="001", EQName="AGV_001"},
                          new AgvcInfoForKingAllant(){  AGVID="002", StationID="001", EQID="002", EQName="AGV_002"},
+                         new AgvcInfoForKingAllant(){  AGVID="003", StationID="001", EQID="003", EQName="AGV_003"},
                     },
                     agvsParameters = new Parameters.AGVSParameters
                     {
                         tcpParams = new Parameters.TCPParameters
                         {
-                            HostIP = "127.0.0.1",
-                            HostPort = 5500
+                            HostIP = "192.168.0.3", //127.0.0.1
+                            HostPort = 5501 //5500
                         }
                     }
                 };
