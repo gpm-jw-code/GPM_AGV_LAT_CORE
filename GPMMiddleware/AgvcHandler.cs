@@ -6,8 +6,10 @@ using GPM_AGV_LAT_CORE.LATSystem;
 using GPM_AGV_LAT_CORE.Logger;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace GPM_AGV_LAT_CORE.GPMMiddleware
@@ -18,6 +20,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
     /// </summary>
     public static class AgvcHandler
     {
+        public static ManualResetEvent ReportPauseResetEvent = new ManualResetEvent(true);
         static ILogger logger = new LoggerInstance(typeof(AgvcHandler));
         /// <summary>
         /// 
@@ -26,9 +29,15 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
         /// <param name="latStateStore">AGVCStateStore</param>
         internal static void StateOnChangedHandler(object sender, AGVCStateStore latStateStore)
         {
-            IAGVC agvc = (IAGVC)sender;
-            IAGVS agvsBinding = agvc.agvsBinding;
-            agvsBinding.ReportAGVCState(agvc, latStateStore);
+            //if (Debugger.IsAttached)
+            //    return;
+            Task.Run(() =>
+            {
+                ReportPauseResetEvent.WaitOne();
+                IAGVC agvc = (IAGVC)sender;
+                IAGVS agvsBinding = agvc.agvsBinding;
+                agvsBinding.ReportAGVCState(agvc, latStateStore);
+            });
         }
 
         internal static void OrderStateOnChangeHandler(object sender, EventArgs e)
@@ -36,11 +45,13 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
 
         }
 
-        internal static void CheckOnlineStateHandler(object sender, IAGVC agvc)
+        internal async static void CheckOnlineStateHandler(object sender, IAGVC agvc)
         {
+            ReportPauseResetEvent.Reset();
+            Thread.Sleep(1000);
             try
             {
-                var onlineState = agvc.agvsBinding.agvsApi.DownloadAgvcOnlineState(agvc).Result;
+                var onlineState = agvc.agvsBinding.agvsApi?.DownloadAgvcOnlineState(agvc).Result;
                 logger.InfoLog($"agvc-{agvc.EQName} online State download result : {onlineState}");
                 agvc.agvcStates.States.EOnlineState = onlineState;
             }
@@ -48,6 +59,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
             {
                 logger.ErrorLog(ex);
             }
+            ReportPauseResetEvent.Set();
         }
 
         /// <summary>
@@ -55,14 +67,36 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="state"></param>
-        internal static void OnlineOffLineRequestHandler(object sender, AGVCBase.OnOffLineRequest state)
+        internal async static void OnlineOffLineRequestHandler(object sender, AGVCBase.OnOffLineRequest state)
         {
+            ReportPauseResetEvent.Reset();
+            await Task.Delay(1000);
             IAGVC agvc = state.agvc;
             ONLINE_STATE stateReq = state.stateReq;
             logger.InfoLog($"[Online/Offline Request Handle]{agvc.EQName} 要求 {stateReq.ToString()}");
-            var onlineState = state.agvc.agvsBinding.agvsApi.AgvcOnOffLineRequst(agvc, stateReq).Result;
+
+            var currentOnlineState = agvc.agvsBinding.agvsApi?.DownloadAgvcOnlineState(agvc).Result;
+            if (state.stateReq == currentOnlineState)
+            {
+                agvc.agvcStates.States.EOnlineState = currentOnlineState;
+                logger.InfoLog($"[Online/Offline Request Handle]{agvc.EQName} 上線狀態現在是 {currentOnlineState.ToString()}");
+                return;
+            }
+
+
+            var onlineState = state.agvc.agvsBinding.agvsApi.AgvcOnOffLineRequst(agvc, stateReq, state.currentStation).Result;
             agvc.agvcStates.States.EOnlineState = onlineState;
             logger.InfoLog($"[Online/Offline Request Handle]{agvc.EQName} 上線狀態現在是 {onlineState.ToString()}");
+            if (state.stateReq == ONLINE_STATE.OFFLINE)
+                ReportPauseResetEvent.Set();
+            else if (state.stateReq == ONLINE_STATE.ONLINE)
+            {
+                Task.Factory.StartNew(async () =>
+                {
+                    await Task.Delay(8000);
+                    ReportPauseResetEvent.Set();
+                });
+            }
         }
     }
 }

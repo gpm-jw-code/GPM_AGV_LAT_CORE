@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -18,6 +19,10 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
         public string hostIP { get; }
         public int hostPort { get; }
 
+        public string localIP { get; }
+        public int localPort { get; }
+
+
         private ManualResetEvent serverReply = new ManualResetEvent(false);
 
         public event EventHandler<SocketStates> OnMessageReceive;
@@ -25,7 +30,7 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
         public event EventHandler OnDisconnect;
         public event EventHandler OnSendTimeout;
 
-        public SocketStates socketState { get; set; } = new SocketStates(8192);
+        public SocketStates socketState { get; set; } = new SocketStates(65536);
         public TcpSocketClient()
         {
             logger = new LoggerInstance(GetType());
@@ -36,13 +41,27 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
             this.hostIP = hostIP;
             this.hostPort = hostPort;
         }
+        public TcpSocketClient(string hostIP, int hostPort, string localIP, int localPort)
+        {
+            logger = new LoggerInstance(GetType());
+            this.hostIP = hostIP;
+            this.hostPort = hostPort;
 
+            this.localIP = localIP;
+            this.localPort = localPort;
+        }
         public bool Connect()
         {
             try
             {
-                socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                socket.Connect(hostIP, hostPort);
+                IPEndPoint ipLocalEndPoint = new IPEndPoint(IPAddress.Parse(localIP), localPort);
+                TcpClient clientSocket = new TcpClient(ipLocalEndPoint);
+                clientSocket.Connect(hostIP, hostPort);
+                socket = clientSocket.Client;
+
+                //socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                //socket.Connect(hostIP, hostPort);
+
                 socketState.socket = socket;
                 socket.BeginReceive(socketState.buffer, 0, socketState.bufferSize, SocketFlags.None, new AsyncCallback(ReceieveCallBack), socketState);
 
@@ -63,14 +82,22 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
             errmsg = "";
             try
             {
-                socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                socket.Connect(hostIP, hostPort);
+                IPEndPoint ipLocalEndPoint = new IPEndPoint(IPAddress.Parse(localIP), localPort);
+                TcpClient clientSocket = new TcpClient(ipLocalEndPoint);
+                clientSocket.Connect(hostIP, hostPort);
+                socket = clientSocket.Client;
+
+                //socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                //socket.Connect(hostIP, hostPort);
+                clientSocket.Client.ReceiveBufferSize = int.MaxValue;
                 socketState.socket = socket;
                 socket.BeginReceive(socketState.buffer, 0, socketState.bufferSize, SocketFlags.None, new AsyncCallback(ReceieveCallBack), socketState);
+
                 return true;
             }
-            catch (SocketException)
+            catch (SocketException ex)
             {
+                errmsg = ex.Message;
                 OnDisconnect?.Invoke(this, null);
                 return false;
             }
@@ -123,7 +150,7 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
             OnDisconnect?.Invoke(this, null);
         }
 
-        internal async Task<SocketStates> Send(byte[] data, bool waitReply)
+        internal async Task<SocketStates> Send(byte[] data, bool waitReply, string check_match_str = null)
         {
             try
             {
@@ -160,7 +187,18 @@ namespace GPM_AGV_LAT_CORE.Protocols.Tcp
 
                         if (waitReply)
                         {
-                            serverReply.WaitOne();
+                            if (check_match_str != null)
+                            {
+
+                                while (!serverReplyState.ASCIIRev.Contains(check_match_str))
+                                {
+                                    Thread.Sleep(1);
+                                }
+                            }
+                            else
+
+                                serverReply.WaitOne();
+
                             repplyed = true;
                         }
                         return serverReplyState;

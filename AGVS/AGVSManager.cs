@@ -42,8 +42,10 @@ namespace GPM_AGV_LAT_CORE.AGVS
                     {
                         tcpParams = new Parameters.TCPParameters
                         {
-                            HostIP = "192.168.0.3", //127.0.0.1
-                            HostPort = 5501 //5500
+                            HostIP = "0.tcp.jp.ngrok.io", //127.0.0.1
+                            HostPort = 14776,
+                            LocalIP = "172.20.10.8",
+                            LocalPort = 13001
                         }
                     }
                 };

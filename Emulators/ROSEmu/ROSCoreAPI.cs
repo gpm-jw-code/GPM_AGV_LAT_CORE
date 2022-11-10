@@ -145,6 +145,12 @@ namespace GPM_AGV_LAT_CORE.Emulators.ROSEmu
             }
         }
 
+        internal async Task<string> GetCurrentStation()
+        {
+            var json = await HttpGet("/CurrentStation");
+            return json;
+        }
+
         #endregion
 
         public class NavigatingState

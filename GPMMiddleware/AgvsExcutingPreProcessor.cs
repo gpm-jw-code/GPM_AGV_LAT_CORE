@@ -69,7 +69,10 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.ExcutingPreProcessor
             EExecuteType = JudgeExecutingType();
             agvcFound = FindAGV();
             taskDownloadObject = aGVSExecutingState.executingObject;
-
+            if (agvcFound == null)
+            {
+                return null;
+            }
             clsHostExecuting newExecuting = new clsHostExecuting(agvs, agvcFound, taskDownloadObject, EExecuteType)
             {
                 RecieveTimeStamp = DateTime.Now,

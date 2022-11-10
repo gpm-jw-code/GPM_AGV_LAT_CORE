@@ -20,7 +20,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             {
                     {"SID",infos.SID},
                     {"EQName",infos.EQName},
-                    {"SystemBytes",SystemBytes},
+                    {"System Bytes",SystemBytes},
                     {"Header", new Dictionary<string,object>() },
             };
         }
@@ -30,7 +30,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             {
                     {"SID",SID},
                     {"EQName",EQName},
-                    {"SystemBytes",SystemBytes},
+                    {"System Bytes",SystemBytes},
                     {"Header", new Dictionary<string,object>() },
             };
         }
@@ -74,7 +74,15 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
             return CreateStateReportDataModel(new RunningStateReportModel()
             {
                 RamUsagePercent = 69.3,
-                AGVStatus = 1
+                AGVStatus = 1,
+                LastVisitedNode = 321,
+
+                Corrdination = new RunningStateReportModel.clsCorrdination()
+                {
+                    X = 0,
+                    Y = 0,
+                    Theta = 0
+                }
             });
         }
 

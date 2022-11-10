@@ -30,6 +30,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
         {
             ExecutingAGVC = toAGVC;
             this.FromAGVS = new clsOrderAGVSinfo(fromAGVS.agvsType);
+
             this.ExecuteingAGVCInfo = new clsOrderAGVCinfo(toAGVC.agvcType, toAGVC.EQName, toAGVC.agvcInfos);
             this.TaskDownloadData = TaskDownloadData;
             this.EExecuteType = EExecuteType;

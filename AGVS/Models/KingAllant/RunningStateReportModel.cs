@@ -32,9 +32,9 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
 
         public class clsCorrdination
         {
-            public double X { get; set; }
-            public double Y { get; set; }
-            public double Theta { get; set; }
+            public double X { get; set; } = 0;
+            public double Y { get; set; } = 0;
+            public double Theta { get; set; } = 0;
         }
 
         public class clsAlarmCode

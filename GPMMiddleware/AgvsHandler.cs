@@ -36,6 +36,13 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
             IAGVS agvs = (KingGallentAGVS)sender;
             IAgvsExcutingPreProcessor processor = new KingGallentExcutingPreProcessor();
             clsHostExecuting newOrder = processor.Run(agvs, executingState);
+
+            if (newOrder == null)
+            {
+                logger.WarnLog(String.Format("KG AGVS 任務{0} 指派失敗", executingState.state));
+                return;
+            }
+
             ExecutingTransferWorkFlow(agvs, processor.agvcFound, newOrder, executingState);
         }
 

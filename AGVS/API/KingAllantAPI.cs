@@ -45,7 +45,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
 
         public async Task<bool> RunningStatusReport(Dictionary<string, object> agvcRunningStateData)
         {
-            SocketStates states = await ReportRequestMessageSendOut(JsonConvert.SerializeObject(agvcRunningStateData));
+            SocketStates states = await ReportRequestMessageSendOut(JsonConvert.SerializeObject(agvcRunningStateData), "0106");
             return states.receieveLen != 0;
         }
 
@@ -54,6 +54,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
         {
             AgvcInfoForKingAllant agvcInfo = (AgvcInfoForKingAllant)agvc.agvcInfos;
             Dictionary<string, object> taskDownloadReply = CreateModelBase(agvc);
+            taskDownloadReply["System Bytes"] = agvc.orderList_LAT.Last().latOrderDetail.action.actionIndex;
             taskDownloadReply["Header"] = new Dictionary<string, object>()
             {
                 {"0302", new Dictionary<string, object>()
@@ -93,13 +94,13 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
                         {
                             { "Time Stamp",DateTime.Now.ToString("yyyyMMdd HH:mm:ss") }, //上報時間
                             { "Task Name", order.latOrderDetail.taskName },     //任務名稱
-                            { "Task Simplex", order.latOrderDetail.taskName },  //任務TC拆解段落下給AGVC(??? 工蝦小)
-                            { "Task Sequence", order.latOrderDetail.taskName }, //該路徑的第幾個點位
+                            { "Task Simplex", string.Format("{0}_{1}",order.latOrderDetail.taskName ,order.latOrderDetail.action.actionIndex ) },  //任務TC拆解段落下給AGVC(??? 工蝦小)
+                            { "Task Sequence", order.latOrderDetail.action.actionIndex }, //該路徑的第幾個點位
                             { "Task Status", GetTaskStatusFromLATState(order.State)},
                         }
                     }
             };
-            ReportRequestMessageSendOut(JsonConvert.SerializeObject(taskDownloadReply));
+            ReportRequestMessageSendOut(JsonConvert.SerializeObject(taskDownloadReply), "0304");
         }
 
         private Dictionary<string, object> CreateModelBase(AgvcInfoForKingAllant agvcInfo)
@@ -108,7 +109,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
             {
                 { "SID",agvcInfo.SID},
                 { "EQName",agvcInfo.EQName},
-                { "SystemBytes",(uint)302},
+                { "System Bytes",(uint)302},
                 { "Header",new Dictionary<string, object>()}
             };
             return taskDownloadReply;
@@ -129,7 +130,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
                 case ORDER_STATE.EXECUTING:
                     return 1;
                 case ORDER_STATE.COMPLETE:
-                    return 4;
+                    return 2;
                 case ORDER_STATE.STOPPED:
                     return 4;
                 case ORDER_STATE.FAILED:
@@ -162,21 +163,21 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
         }
 
 
-        private async Task<SocketStates> ReportRequestMessageSendOut(string requestJson)
+        private async Task<SocketStates> ReportRequestMessageSendOut(string requestJson, string check_match_str = null)
         {
             if (!connected)
             {
                 logger.WarnLog($"無法發送 [Request] 給kingGallent派車系統，因為socket連線已經中斷");
                 return new SocketStates() { };
             }
-            var states = await SocketSendOut(requestJson, true);
+            var states = await SocketSendOut(requestJson, true, check_match_str);
             mhsLogger.LATToAGVS(requestJson);
             return states;
         }
 
-        private async Task<SocketStates> SocketSendOut(string requestJson, bool waitReply)
+        private async Task<SocketStates> SocketSendOut(string requestJson, bool waitReply, string check_match_str = null)
         {
-            var states = await socketClient.Send(CreateSendOutBytes(requestJson), waitReply);
+            var states = await socketClient.Send(CreateSendOutBytes(requestJson), waitReply, check_match_str);
             return states;
 
         }
@@ -192,18 +193,26 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
         }
         public async Task<ONLINE_STATE> DownloadAgvcOnlineState(IAGVC agvc)
         {
-            HandshakeRunningStatusReportHelper stateReport = new HandshakeRunningStatusReportHelper(agvc.agvcInfos as AgvcInfoForKingAllant);
-            var onlineModeQueryModelJson = stateReport.CreateOnlineOfflineModeQueryModelJson();
-            var states = await ReportRequestMessageSendOut(onlineModeQueryModelJson);
-            if (states.ASCIIRev.Contains("*"))
+            Dictionary<string, Dictionary<string, object>> headerdata = null;
+            try
             {
-                string jsonStr = states.ASCIIRev.Replace("*\r", "");
-                Dictionary<string, object> revObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonStr);
-                var headerdata = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(revObj["Header"].ToString());
-                return headerdata["0102"]["Remote Mode"].ToString() == "1" ? ONLINE_STATE.ONLINE : ONLINE_STATE.OFFLINE;
+                HandshakeRunningStatusReportHelper stateReport = new HandshakeRunningStatusReportHelper(agvc.agvcInfos as AgvcInfoForKingAllant);
+                var onlineModeQueryModelJson = stateReport.CreateOnlineOfflineModeQueryModelJson();
+                var states = await ReportRequestMessageSendOut(onlineModeQueryModelJson, "0102");
+                if (states.ASCIIRev.Contains("*"))
+                {
+                    string jsonStr = states.ASCIIRev.Replace("*\r", "");
+                    Dictionary<string, object> revObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonStr);
+                    headerdata = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(revObj["Header"].ToString());
+                    return headerdata["0102"]["Remote Mode"].ToString() == "1" ? ONLINE_STATE.ONLINE : ONLINE_STATE.OFFLINE;
+                }
+                else
+                    return ONLINE_STATE.Unknown;
             }
-            else
-                return ONLINE_STATE.Unknown;
+            catch (Exception ex)
+            {
+                throw ex;
+            }
 
         }
 
@@ -211,7 +220,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
         {
             HandshakeRunningStatusReportHelper stateReport = new HandshakeRunningStatusReportHelper(sid, eq_name);
             var onlineModeQueryModelJson = stateReport.CreateOnlineOfflineModeQueryModelJson();
-            var states = await ReportRequestMessageSendOut(onlineModeQueryModelJson);
+            var states = await ReportRequestMessageSendOut(onlineModeQueryModelJson, "0102");
             if (states.ASCIIRev.Contains("*"))
             {
                 string jsonStr = states.ASCIIRev.Replace("*\r", "");
@@ -229,7 +238,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
             HandshakeRunningStatusReportHelper stateReport = new HandshakeRunningStatusReportHelper(sid, eq_name);
 
             var onlineModeQueryModelJson = stateReport.CreateOnlineOfflineRequestJson(stateReq == ONLINE_STATE.OFFLINE ? 0 : 1, -1);
-            var states = await ReportRequestMessageSendOut(onlineModeQueryModelJson);
+            var states = await ReportRequestMessageSendOut(onlineModeQueryModelJson, "0104");
             if (states.ASCIIRev.Contains("*"))
             {
                 string jsonStr = states.ASCIIRev.Replace("*\r", "");
@@ -248,21 +257,22 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
             else
                 return ONLINE_STATE.Unknown;
         }
-        public async Task<ONLINE_STATE> AgvcOnOffLineRequst(IAGVC agvc, ONLINE_STATE stateReq)
+        public async Task<ONLINE_STATE?> AgvcOnOffLineRequst(IAGVC agvc, ONLINE_STATE stateReq, int currentStation)
         {
-            //先報一次0105
+            ////先報一次0105
             HandshakeRunningStatusReportHelper stateReport = new HandshakeRunningStatusReportHelper(agvc.agvcInfos as AgvcInfoForKingAllant);
-            var stateReportObj = stateReport.CreateStateReportDataModel(agvc.agvcStates);
-            bool state_report_success = await RunningStatusReport(stateReportObj);
+            //var stateReportObj = stateReport.CreateStateReportDataModel(agvc.agvcStates);
+            //bool state_report_success = await RunningStatusReport(stateReportObj);
 
-            if (!state_report_success)
-            {
-                logger.WarnLog($"要求{stateReq}失敗，因為上報0105未成功，與派車系統的通訊可能有問題(報文格式)");
-                return ONLINE_STATE.Unknown;
-            }
+            //if (!state_report_success)
+            //{
+            //    logger.WarnLog($"要求{stateReq}失敗，因為上報0105未成功，與派車系統的通訊可能有問題(報文格式)");
+            //    return ONLINE_STATE.Unknown;
+            //}
 
-            var onlineModeQueryModelJson = stateReport.CreateOnlineOfflineRequestJson(stateReq == ONLINE_STATE.OFFLINE ? 0 : 1, -1);
-            var states = await ReportRequestMessageSendOut(onlineModeQueryModelJson);
+            var onlineModeQueryModelJson = stateReport.CreateOnlineOfflineRequestJson(stateReq == ONLINE_STATE.OFFLINE ? 0 : 1, currentStation);
+
+            var states = await ReportRequestMessageSendOut(onlineModeQueryModelJson, "0104");
             if (states.ASCIIRev.Contains("*"))
             {
                 string jsonStr = states.ASCIIRev.Replace("*\r", "");

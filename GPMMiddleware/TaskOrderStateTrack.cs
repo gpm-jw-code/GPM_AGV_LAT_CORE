@@ -35,7 +35,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
             {
                 ORDER_STATE _preState = ORDER_STATE.NotFound;
                 Agvc.agvcStates.MapStates.currentStationID = "Navigating";
-               
+
                 while (true)
                 {
                     await Task.Delay(1000);
@@ -55,7 +55,7 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                 }
 
 
-                //Agvc.agvcStates.MapStates.currentStationID = NewExecuting.latOrderDetail.action.stationID;
+                Agvc.agvcStates.MapStates.currentStationID = NewExecuting.latOrderDetail.action.stationID;
                 Agvc.agvcStates.MapStates.navigationState.pathStations.Clear();
                 Agvc.agvcStates.MapStates.navigationState.IsNavigating = false;
 

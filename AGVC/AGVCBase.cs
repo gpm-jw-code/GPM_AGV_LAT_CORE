@@ -87,7 +87,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
         {
             logger.InfoLog($"{EQName} 上線狀態初始化開始");
             int ind = 1;
-            var state = ONLINE_STATE.Unknown;
+            ONLINE_STATE? state = ONLINE_STATE.Unknown;
             while (state == ONLINE_STATE.Unknown | state == ONLINE_STATE.Downloading)
             {
                 agvcStates.States.EOnlineState = ONLINE_STATE.Downloading;
@@ -99,12 +99,15 @@ namespace GPM_AGV_LAT_CORE.AGVC
             }
 
             ind = 1;
-            while (agvcStates.States.EOnlineState != ONLINE_STATE.ONLINE)
-            {
-                logger.InfoLog($"{EQName} 上線請求狀態...({ind})");
-                OnlineOfflineRequest?.Invoke(this, new OnOffLineRequest(this, ONLINE_STATE.ONLINE));
-                ind += 1;
-            }
+
+            //非上線狀態自動請求上線
+
+            //while (agvcStates.States.EOnlineState != ONLINE_STATE.ONLINE)
+            //{
+            //    logger.InfoLog($"{EQName} 上線請求狀態...({ind})");
+            //    OnlineOfflineRequest?.Invoke(this, new OnOffLineRequest(this, ONLINE_STATE.ONLINE));
+            //    ind += 1;
+            //}
         }
 
         virtual public List<string> GetMapNames()
@@ -180,6 +183,9 @@ namespace GPM_AGV_LAT_CORE.AGVC
         {
 
             var excutingOrder = orderList_LAT.FirstOrDefault(order => order.State == ORDER_STATE.EXECUTING);
+            if (excutingOrder == null)
+                return Task.CompletedTask;
+
             bool anyTaskExecute = !orderList_LAT.All(order => order.State == ORDER_STATE.COMPLETE | order.State == ORDER_STATE.CANCELED);
 
             agvcStates.MapStates.navigationState.IsNavigating = anyTaskExecute;
@@ -271,15 +277,25 @@ namespace GPM_AGV_LAT_CORE.AGVC
             throw new NotImplementedException();
         }
 
+        public async Task<int> OnlineStateSwitchInvoke(int onlineMode, int currentStation)
+        {
+            agvcStates.MapStates.currentStationID = currentStation.ToString();
+            OnlineOfflineRequest?.Invoke(this, new OnOffLineRequest(this, onlineMode == 0 ? ONLINE_STATE.OFFLINE : ONLINE_STATE.ONLINE, currentStation));
+            return (int)agvcStates.States.EOnlineState;
+        }
+
+
         public class OnOffLineRequest
         {
             public IAGVC agvc { get; private set; }
             public ONLINE_STATE stateReq { get; private set; }
+            public int currentStation { get; private set; }
 
-            public OnOffLineRequest(IAGVC agvc, ONLINE_STATE stateReq)
+            public OnOffLineRequest(IAGVC agvc, ONLINE_STATE stateReq, int currentStation)
             {
                 this.agvc = agvc;
                 this.stateReq = stateReq;
+                this.currentStation = currentStation;
             }
         }
 

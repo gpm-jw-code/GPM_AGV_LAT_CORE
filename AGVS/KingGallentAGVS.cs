@@ -94,7 +94,12 @@ namespace GPM_AGV_LAT_CORE.AGVS
             try
             {
                 Console.WriteLine("{0}:{1}", agvsParameters.tcpParams.HostIP, agvsParameters.tcpParams.HostPort);
-                tcpSocketClient = new TcpSocketClient(agvsParameters.tcpParams.HostIP, agvsParameters.tcpParams.HostPort);
+                string localIP = agvsParameters.tcpParams.LocalIP;
+                string hostIP = agvsParameters.tcpParams.HostIP;
+                int localPort = agvsParameters.tcpParams.LocalPort;
+                int hostPort = agvsParameters.tcpParams.HostPort;
+
+                tcpSocketClient = new TcpSocketClient(hostIP, hostPort, localIP, localPort);
                 tcpSocketClient.OnMessageReceive += TcpSocketClient_OnMessageReceive;
                 tcpSocketClient.OnDisconnect += TcpSocketClient_OnDisconnect;
                 connected = tcpSocketClient.Connect(out err_msg);
@@ -131,24 +136,28 @@ namespace GPM_AGV_LAT_CORE.AGVS
                 });
             }
         }
-
+        private string tempJsonRev = "";
         private void TcpSocketClient_OnMessageReceive(object sender, SocketStates _SocketStates)
         {
             try
             {
                 string[] splitedAry = _SocketStates.ASCIIRev.Replace("*", ";").Split(';');
-                foreach (var jsonStr in splitedAry)
+                string jsonStr = splitedAry.FirstOrDefault(s => s != "" | s != " " | s != null);
+                if (jsonStr == null)
+                    return;
+
+                tempJsonRev += jsonStr;
+                if (TryDeserializeAGVSMsgJson(tempJsonRev))
                 {
-                    if (!jsonStr.Contains("SID"))
-                        continue;
-                    mhsLogger.AGVSToLAT(jsonStr);
-                    Dictionary<string, object> revObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonStr);
+                    //Console.WriteLine("From AGVS:{0}", tempJsonRev);
+                    mhsLogger.AGVSToLAT(tempJsonRev);
+                    Dictionary<string, object> revObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(tempJsonRev);
                     var headerdata = JsonConvert.DeserializeObject<Dictionary<string, object>>(revObj["Header"].ToString());
                     OnHostMessageReceived?.Invoke(this, revObj);
 
                     if (headerdata.ContainsKey("0301") | headerdata.ContainsKey("0305"))
                     {
-                        logger.WarnLog($"AGVS Task Down..{jsonStr}");
+                        logger.WarnLog($"AGVS Task Down..{tempJsonRev}");
                         var taskExecutingState = new clsHostExcutingState(_SocketStates, revObj);
                         OnTaskDownloadRecieved?.Invoke(this, taskExecutingState);
                     }
@@ -156,9 +165,12 @@ namespace GPM_AGV_LAT_CORE.AGVS
                     {
                         //logger.InfoLog($"AGVS Acknowleage : {jsonStr}");
                     }
+                    tempJsonRev = "";
+                }
+                else
+                {
 
                 }
-
 
             }
             catch (Exception ex)
@@ -167,12 +179,32 @@ namespace GPM_AGV_LAT_CORE.AGVS
             }
         }
 
+        private bool TryDeserializeAGVSMsgJson(string str)
+        {
+            try
+            {
+                JsonConvert.DeserializeObject<Dictionary<string, object>>(str);
+                return true;
+            }
+            catch (Newtonsoft.Json.JsonReaderException ex)
+            {
+                return false;
+            }
+        }
+
         public async Task<bool> ReportAGVCState(IAGVC agvc, AGVCStateStore agvcState)
         {
             HandshakeRunningStatusReportHelper stateReport = new HandshakeRunningStatusReportHelper(agvc.agvcInfos as AgvcInfoForKingAllant);
             var reportObj = stateReport.CreateStateReportDataModel(new RunningStateReportModel
             {
-                AGVStatus = (int)agvcState.States.ERunningState
+                AGVStatus = (int)agvcState.States.ERunningState,
+                LastVisitedNode = int.Parse(agvcState.MapStates.currentStationID),
+                Corrdination = new RunningStateReportModel.clsCorrdination
+                {
+                    X = 1,
+                    Y = 1,
+                    Theta = 0
+                }
             });
             return await _agvsApi.RunningStatusReport(reportObj);
         }

@@ -117,7 +117,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
             agvcStates.MapStates.globalCoordinate.y = AGVInterface.STATES.locationInfo.y;
             agvcStates.MapStates.globalCoordinate.r = AGVInterface.STATES.locationInfo.angle;
 
-            agvcStates.MapStates.currentStationID = AGVInterface.STATES.locationInfo.current_station == "" ? "移動中" : AGVInterface.STATES.locationInfo.current_station;
+            agvcStates.MapStates.currentStationID = AGVInterface.STATES.locationInfo.current_station == "" ? agvcStates.MapStates.currentStationID : AGVInterface.STATES.locationInfo.current_station;
             agvcStates.MapStates.currentMapInfo.name = AGVInterface.STATES.mapLoadInfo.current_map;
             agvcStates.MapStates.currentMapInfo.stations = AGVInterface.STATES.stationLoadInfo.stations.Select(st => new StationInfo()
             {

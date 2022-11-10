@@ -13,7 +13,7 @@ namespace GPM_AGV_LAT_CORE.AGVC.AGVCStates
         public RobotCoordinate robotCorrdinate { get; internal set; } = new RobotCoordinate();
         public MapInfo currentMapInfo { get; set; } = new MapInfo();
         public NavigationState navigationState { get; set; } = new NavigationState();
-        public string currentStationID { get; internal set; } = "Unknown";
+        public string currentStationID { get; internal set; } = "0";
 
         public class NavigationState
         {
@@ -32,11 +32,13 @@ namespace GPM_AGV_LAT_CORE.AGVC.AGVCStates
             public string mapFileUrl { get; set; }
             public List<StationInfo> stations { get; set; } = new List<StationInfo>();
             public List<string> station_id_list => stations.Select(st => st.id).ToList();
+            public List<int> station_number_list => stations.Select(st => st.stationNumber).ToList();
         }
 
         public class StationInfo : GlobalCoordinate
         {
             public string id { get; set; }
+            public int stationNumber { get; set; }
             public string desc { get; set; }
             public string type { get; set; }
         }

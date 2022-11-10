@@ -30,6 +30,10 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order
             {
                 NAVIGATOR
             }
+
+
+            public int actionIndex { get; set; }
+
             /// <summary>
             /// 動作ID(唯一)
             /// </summary>

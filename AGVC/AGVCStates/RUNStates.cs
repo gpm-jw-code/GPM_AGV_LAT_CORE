@@ -13,12 +13,12 @@ namespace GPM_AGV_LAT_CORE.AGVC.AGVCStates
 
     public enum RUNNING_STATE
     {
-        IDLE, RUNNING
+        UNKNOWN = 0, IDLE, RUNNING, DOWN, CHARGING
     }
 
     public enum ONLINE_STATE
     {
-        ONLINE, OFFLINE, Unknown,Downloading
+        OFFLINE = 0, ONLINE = 1, Unknown, Downloading
     }
 
     public enum CONNECTION_STATE
@@ -35,7 +35,7 @@ namespace GPM_AGV_LAT_CORE.AGVC.AGVCStates
         public CONNECTION_STATE EConnectionState { get; set; } = CONNECTION_STATE.DISCONNECT;
         public OPERATION_STATE EOperationState { get; set; } = OPERATION_STATE.MANUAL;
         public RUNNING_STATE ERunningState { get; set; } = RUNNING_STATE.IDLE;
-        public ONLINE_STATE EOnlineState { get; set; } = ONLINE_STATE.Unknown;
+        public ONLINE_STATE? EOnlineState { get; set; } = ONLINE_STATE.Unknown;
 
         public string ConnectionState => EConnectionState.ToString();
         public string OperationState => EOperationState.ToString();

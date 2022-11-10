@@ -41,6 +41,7 @@ namespace GPM_AGV_LAT_CORE.Emulators.GangHao
         public Dictionary<Dictionary<string, string>, bool> MapStatus = new Dictionary<Dictionary<string, string>, bool>();
 
         double[] currentPosition = new double[3] { 0, 0, 0 };
+        string current_station = "0";
         public Dictionary<string, int> taskStatus = new Dictionary<string, int>();
 
         public string ros_bot_uri { get; set; }
@@ -99,6 +100,7 @@ namespace GPM_AGV_LAT_CORE.Emulators.GangHao
               {
                   await Task.Delay(TimeSpan.FromMilliseconds(300));
                   currentPosition = await rosAPI.GetCurrentPosition();
+                  current_station = await rosAPI.GetCurrentStation();
               }
 
           });
@@ -241,6 +243,7 @@ namespace GPM_AGV_LAT_CORE.Emulators.GangHao
                     err_msg = "",
                     x = currentPosition[0],
                     y = currentPosition[1],
+                    current_station = current_station,
                     angle = 135
                 };
             if (cmbTypeNo == 1005)

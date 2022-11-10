@@ -129,5 +129,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
         void AGVCDataConvertToLATFormat(object agvcData);
         List<string> GetMapNames();
         Task<bool> RelocProcess();
+
+        Task<int> OnlineStateSwitchInvoke(int onlineMode, int currentStation);
     }
 }

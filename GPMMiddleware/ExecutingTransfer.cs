@@ -32,7 +32,21 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                 {
 
                     var task_3051 = OrderConverter.LATToAGVC.ToGanHaoOrder.ToGoTargetOrder(newExecuting.latOrderDetail);
+
                     bool target_station_exist = haoAGVC.agvcStates.MapStates.currentMapInfo.station_id_list.Contains(task_3051.id);
+
+                    if (!target_station_exist)
+                    {
+                        try
+                        {
+                            int station_number = int.Parse(task_3051.id);
+                            target_station_exist = haoAGVC.agvcStates.MapStates.currentMapInfo.station_number_list.Contains(station_number);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            target_station_exist = false;
+                        }
+                    }
 
                     if (!target_station_exist)
                         return new NavigateReqResult()

@@ -14,6 +14,9 @@ namespace GPM_AGV_LAT_CORE.Parameters
         public string HostIP { get; set; } = "192.168.0.107";
         public int HostPort { get; set; } = 5010;
 
+        public string LocalIP { get; set; } = "127.0.0.1";
+        public int LocalPort { get; set; } = 3001;
+
         public string Host => $"{HostIP}:{HostPort}";
     }
 }

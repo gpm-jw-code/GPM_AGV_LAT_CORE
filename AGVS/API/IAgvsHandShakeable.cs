@@ -48,7 +48,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.API
         /// <returns></returns>
         Task<ONLINE_STATE> DownloadAgvcOnlineState(IAGVC agvc);
 
-        Task<ONLINE_STATE> AgvcOnOffLineRequst(IAGVC agvc, ONLINE_STATE stateReq);
+        Task<ONLINE_STATE?> AgvcOnOffLineRequst(IAGVC agvc, ONLINE_STATE stateReq, int currentStation);
         /// <summary>
         /// 交握log
         /// </summary>

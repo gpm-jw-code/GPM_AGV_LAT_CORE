@@ -4,6 +4,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using GangHaoAGV.Models.MapModels.Requests;
+using static GPM_AGV_LAT_CORE.GPMMiddleware.Manergers.Order.clsLATTaskOrder;
 
 namespace GPM_AGV_LAT_CORE.GPMMiddleware
 {
@@ -56,14 +57,20 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
             /// </summary>
             internal struct AGVSToLAT
             {
+
+
+                private static clsAction TrajectoryToLATTaskOrderAction(Dictionary<string, object> Trajectory)
+                {
+                    return new clsAction();
+                }
+
                 /// <summary>
-                /// 把KingGallent Download Task 物件轉成LAT格式
+                /// 將軌跡轉成多筆訂單
                 /// </summary>
                 /// <param name="orderObject"></param>
                 /// <returns></returns>
-                internal static clsLATTaskOrder KingGallentOrderToLATOrder(Dictionary<string, object> orderObject)
+                internal static clsLATTaskOrder[] KingGallentOrderToLATOrders(Dictionary<string, object> orderObject)
                 {
-
                     var headerObj = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(orderObject["Header"].ToString());
                     if (headerObj.Count == 0)
                     {
@@ -74,18 +81,58 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                     string _taskName = taskItem["Task Name"].ToString();
                     //TODO 解析actions (路徑)
                     string trajectoryJson = taskItem["Trajectory"].ToString();
-                    var trajectory = JsonConvert.DeserializeObject < Dictionary<string, Dictionary<string, object>>>(trajectoryJson);
-
-                    return new clsLATTaskOrder()
+                    Dictionary<string, object>[] trajectorys = JsonConvert.DeserializeObject<Dictionary<string, object>[]>(trajectoryJson);
+                    return trajectorys.Select(trag => new clsLATTaskOrder()
                     {
                         taskName = _taskName,
                         executEqName = _eqName,
-                        action = new clsLATTaskOrder.clsAction()
+                        action = TrajectoryToLATTaskOrderAction(trag)
+                    }).ToArray();
+
+                }
+
+
+                /// <summary>
+                /// 把KingGallent Download Task 物件轉成LAT格式
+                /// </summary>
+                /// <param name="orderObject"></param>
+                /// <returns></returns>
+                internal static clsLATTaskOrder KingGallentOrderToLATOrder(Dictionary<string, object> orderObject)
+                {
+                    try
+                    {
+                        var headerObj = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(orderObject["Header"].ToString());
+                        if (headerObj.Count == 0)
                         {
-                            actionID = _taskName + "-action",
-                            stationID = trajectory.Keys.First()
+                            return null;
                         }
-                    };
+                        var taskItem = headerObj.First().Value;
+                        string _eqName = orderObject["EQName"].ToString();
+                        string _taskName = taskItem["Task Name"].ToString();
+                        string _task = taskItem["Task Name"].ToString();
+                        //TODO 解析actions (路徑)
+                        string trajectoryJson = taskItem["Trajectory"].ToString();
+                        var trajectory = JsonConvert.DeserializeObject<Dictionary<string, object>[]>(trajectoryJson);
+                        var path = trajectory.Select(dict => dict["Point ID"].ToString()).ToList();
+                        return new clsLATTaskOrder()
+                        {
+                            taskName = _taskName,
+                            executEqName = _eqName,
+                            action = new clsAction
+                            {
+                                actionIndex = int.Parse(orderObject["System Bytes"].ToString()),
+                                paths = path,
+                                actionID = _taskName,
+                                stationID = path.Last(),
+
+                            }
+                        };
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+
                 }
                 /// <summary>
                 /// 把GPM Download Task 物件轉成LAT格式
@@ -97,7 +144,16 @@ namespace GPM_AGV_LAT_CORE.GPMMiddleware
                 {
                     throw new NotImplementedException();
                 }
-
+                /// <summary>
+                /// 把GPM Download Task 物件轉成LAT格式
+                /// </summary>
+                /// <param name="taskObject"></param>
+                /// <returns></returns>
+                /// <exception cref="NotImplementedException"></exception>
+                internal static clsLATTaskOrder[] GPMOrderToLATOrdes(object taskObject)
+                {
+                    throw new NotImplementedException();
+                }
             }
         }
 

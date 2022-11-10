@@ -24,7 +24,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
                 returnObj = new Dictionary<string, object>() {
                     {"SID",_remoteObj["SID"]},
                     {"EQName",_remoteObj["EQName"]},
-                    {"SystemBytes",_remoteObj["SystemBytes"]},
+                    {"System Bytes",_remoteObj["System Bytes"]},
                     {"Header", new Dictionary<string,object>() },
                 };
             }
@@ -50,7 +50,7 @@ namespace GPM_AGV_LAT_CORE.AGVS.Models.KingAllant
                 _remoteObj = new Dictionary<string, object>() {
                     {"SID",remoteObj["SID"]},
                     {"EQName",remoteObj["EQName"]},
-                    {"SystemBytes",remoteObj["SystemBytes"]},
+                    {"System Bytes",remoteObj["System Bytes"]},
                     {"Header", new Dictionary<string,object>() },
                 };
                 return true;

@@ -21,9 +21,9 @@ namespace GPM_AGV_LAT_CORE.AGVC
         /// </summary>
         public static List<IAGVC> AGVCList = new List<IAGVC>()
         {
-           new GangHaoAGVC() {ID="001",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.1.227"} }},
-           new GangHaoAGVC() {ID="002",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.1.215"} }},
-           new GangHaoAGVC() {ID="003",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.1.55"} }},
+           new GangHaoAGVC() {ID="001",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.0.107"} }},
+           //new GangHaoAGVC() {ID="002",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.1.215"} }},
+           //new GangHaoAGVC() {ID="003",  agvcParameters =new Parameters.AGVCParameters{tcpParams = new Parameters.TCPParameters{HostIP="192.168.1.227"} }},
         };
 
 
@@ -31,7 +31,6 @@ namespace GPM_AGV_LAT_CORE.AGVC
         {
             return AGVCList.FindAll(agv => agv.agvcStates.MapStates.navigationState.IsNavigating);
         }
-
 
         /// <summary>
         /// 取得所有IDLE狀態的AGV
@@ -180,7 +179,7 @@ namespace GPM_AGV_LAT_CORE.AGVC
                 Console.WriteLine("找不到任何車屬於晶捷能派車系統");
                 return null;
             }
-            var agvc = agcList.FirstOrDefault(agv => ((AgvcInfoForKingAllant)agv.agvcInfos).EQName == SID);
+            var agvc = agcList.FirstOrDefault(agv => ((AgvcInfoForKingAllant)agv.agvcInfos).EQName == SID | ((AgvcInfoForKingAllant)agv.agvcInfos).EQName.Replace("0", "") == SID);
             if (agvc == null)
             {
                 Console.WriteLine("找不到任何車SID為{0}", SID);
